@@ -11,10 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../../generated/prisma/index.js");
 const bcrypt = require("bcrypt");
 const jwt_1 = require("@nestjs/jwt");
-const prisma = new client_1.PrismaClient();
+const prisma = new prisma_1.PrismaClient();
 let AuthService = class AuthService {
     jwtService;
     constructor(jwtService) {

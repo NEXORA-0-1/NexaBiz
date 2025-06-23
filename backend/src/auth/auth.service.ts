@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from 'generated/prisma';  // Adjust relative path as needed
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 

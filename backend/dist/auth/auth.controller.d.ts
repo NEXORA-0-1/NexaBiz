@@ -5,7 +5,12 @@ export declare class AuthController {
     signup(body: {
         email: string;
         password: string;
-    }): Promise<any>;
+    }): Promise<{
+        id: number;
+        email: string;
+        password: string;
+        createdAt: Date;
+    }>;
     login(body: {
         email: string;
         password: string;
