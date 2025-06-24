@@ -21,9 +21,13 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async signup(email, password) {
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            throw new Error('Email already in use');
+        }
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { email, password: hashedPassword }
+            data: { email, password: hashedPassword },
         });
         return user;
     }
