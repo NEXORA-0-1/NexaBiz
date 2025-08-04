@@ -27,7 +27,7 @@ export default function Login() {
         if (userData.role === 'admin') {
           router.push('/adminDashboard')
         } else if (userData.approved === true) {
-          router.push('/dashboard')
+          router.push('/userDashboard')
         } else {
           router.push('/waiting')
         }
