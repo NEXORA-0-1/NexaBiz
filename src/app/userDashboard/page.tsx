@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Home from '../component/home' 
 
 interface UserData {
   userId: string
@@ -72,17 +73,7 @@ export default function UserDashboard() {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="bg-gray-600">
-            <h2 className="text-xl font-semibold mb-2">Home</h2>
-            <p>Welcome, {userData.email}!</p>
-             {/* User Info */}
-            <div className="mb-8">
-              <p><strong>User ID:</strong> {userData.userId}</p>
-              <p><strong>Email:</strong> {userData.email}</p>
-              <p><strong>Role:</strong> {userData.role || 'user'}</p>
-              <p><strong>Approved:</strong> {userData.approved ? 'Yes' : 'No'}</p>
-            </div>
-          </div>
+          <Home userData={userData} />
         )
       case 'product':
         return (
