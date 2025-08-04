@@ -25,7 +25,7 @@ export default function Login() {
         const userData = docSnap.data()
 
         if (userData.role === 'admin') {
-          router.push('/admin')
+          router.push('/adminDashboard')
         } else if (userData.approved === true) {
           router.push('/dashboard')
         } else {
