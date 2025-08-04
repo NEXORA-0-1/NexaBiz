@@ -23,10 +23,12 @@ export default function Signup() {
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: email,
+        role: 'user',         // 🔒 default role
+        approved: false,      // ⏳ waiting for admin approval
         createdAt: new Date()
       })
 
-      alert('Signup successful!')
+      alert('Signup successful! Please wait for admin approval.')
       router.push('/login') // Redirect to login page
     } catch (error: any) {
       console.error('Signup error:', error)
