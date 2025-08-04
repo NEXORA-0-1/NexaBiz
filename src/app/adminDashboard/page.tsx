@@ -4,15 +4,24 @@ import { db } from '@/lib/firebase'
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 
+interface User {
+  id: string
+  email: string
+  role?: string
+  approved: boolean
+}
+
 export default function AdminDashboard() {
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, 'users'))
-    const userList = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    const userList: User[] = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ...(doc.data() as Omit<User, 'id'>) // cast the doc.data() properly
+      }))
+      .filter(user => user.role !== 'admin') // ✅ Hide admins
     setUsers(userList)
   }
 
@@ -41,6 +50,7 @@ export default function AdminDashboard() {
         <thead>
           <tr className="bg-gray-100">
             <th className="p-2 border">Email</th>
+            <th className="p-2 border">Role</th>
             <th className="p-2 border">Approved</th>
             <th className="p-2 border">Actions</th>
           </tr>
@@ -49,6 +59,7 @@ export default function AdminDashboard() {
           {users.map(user => (
             <tr key={user.id} className="border-t">
               <td className="p-2 border">{user.email}</td>
+              <td className="p-2 border capitalize">{user.role || 'user'}</td>
               <td className="p-2 border">{user.approved ? 'Yes' : 'No'}</td>
               <td className="p-2 border">
                 {!user.approved ? (
