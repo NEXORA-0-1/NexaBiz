@@ -81,7 +81,7 @@ export default function UserDashboard() {
         )
       case 'product':
         return (
-          <div className='bg-gray-600'>
+          <div>
             <AddProductForm />
             <MyProductList />
           </div>
@@ -89,8 +89,8 @@ export default function UserDashboard() {
 
       case 'inventory':
         return (
-          <div className='bg-gray-600'>
-            <h1>Inventory management</h1>
+          <div>
+            <MyProductList />
           </div>
         )
 
