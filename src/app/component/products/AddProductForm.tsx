@@ -3,8 +3,8 @@
 import { auth, db } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
-// ✅ Generate PID like PID4F7G9A2X1Z
 const generateProductID = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let result = 'PID'
@@ -15,53 +15,119 @@ const generateProductID = () => {
 }
 
 export default function AddProductForm() {
-  const [name, setName] = useState('')
-  const [purchasePrice, setPurchasePrice] = useState('')
+  const [formData, setFormData] = useState({
+    name: '',
+    purchase_price: '',
+    selling_price: '',
+    qty: ''
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleAddProduct = async () => {
-    const user = auth.currentUser
-    if (!user) return alert('User not logged in')
+    const { name, purchase_price, selling_price, qty } = formData
 
+    if (!name || !purchase_price || !selling_price || !qty) {
+      setMessage('Please fill all fields.')
+      return
+    }
+
+    const user = auth.currentUser
+    if (!user) {
+      setMessage('User not logged in.')
+      return
+    }
+
+    setLoading(true)
     const pid = generateProductID()
     const userProductsRef = collection(db, 'users', user.uid, 'products')
 
-    await addDoc(userProductsRef, {
-      pid,
-      name,
-      purchase_price: parseFloat(purchasePrice),
-      selling_price: 0,
-      qty: 0,
-      createdAt: new Date()
-    })
-
-    alert(`Product added with ID: ${pid}`)
-    setName('')
-    setPurchasePrice('')
+    try {
+      await addDoc(userProductsRef, {
+        pid,
+        name,
+        purchase_price: parseFloat(purchase_price),
+        selling_price: parseFloat(selling_price),
+        qty: parseInt(qty),
+        createdAt: new Date()
+      })
+      setMessage(`✅ Product "${name}" added successfully!`)
+      setFormData({ name: '', purchase_price: '', selling_price: '', qty: '' })
+    } catch (err) {
+      console.error(err)
+      setMessage('❌ Error adding product.')
+    } finally {
+      setLoading(false)
+      setTimeout(() => setMessage(null), 4000)
+    }
   }
 
   return (
-    <div className="mb-6">
-      <h2 className="text-xl font-semibold mb-2">Add Product</h2>
-      <input
-        type="text"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        placeholder="Product Name"
-        className="border px-2 py-1 rounded w-full mb-2"
-      />
-      <input
-        type="number"
-        value={purchasePrice}
-        onChange={e => setPurchasePrice(e.target.value)}
-        placeholder="Purchase Price"
-        className="border px-2 py-1 rounded w-full mb-2"
-      />
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-lg p-6 shadow-md max-w-xl w-full mx-auto mt-6"
+    >
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">➕ Add New Product</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Product Name"
+          className="border px-3 py-2 rounded focus:outline-blue-400"
+        />
+        <input
+          type="number"
+          name="purchase_price"
+          value={formData.purchase_price}
+          onChange={handleChange}
+          placeholder="Purchase Price"
+          className="border px-3 py-2 rounded focus:outline-blue-400"
+        />
+        <input
+          type="number"
+          name="selling_price"
+          value={formData.selling_price}
+          onChange={handleChange}
+          placeholder="Selling Price"
+          className="border px-3 py-2 rounded focus:outline-blue-400"
+        />
+        <input
+          type="number"
+          name="qty"
+          value={formData.qty}
+          onChange={handleChange}
+          placeholder="Initial Quantity"
+          className="border px-3 py-2 rounded focus:outline-blue-400"
+        />
+      </div>
+
       <button
         onClick={handleAddProduct}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        disabled={loading}
+        className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition"
       >
-        Add Product
+        {loading ? 'Adding...' : 'Add Product'}
       </button>
-    </div>
+
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 text-center text-sm font-medium text-blue-800 bg-blue-100 p-2 rounded"
+        >
+          {message}
+        </motion.div>
+      )}
+    </motion.div>
   )
 }

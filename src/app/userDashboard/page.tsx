@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import Home from '../component/home' 
 import AddProductForm from '../component/products/AddProductForm'
 import MyProductList  from '../component/products/MyProductList'
+import MyProductpage  from '../component/products/ProductPage'
 
 interface UserData {
   userId: string
@@ -90,7 +91,7 @@ export default function UserDashboard() {
       case 'inventory':
         return (
           <div>
-            <MyProductList />
+            <MyProductpage />
           </div>
         )
 

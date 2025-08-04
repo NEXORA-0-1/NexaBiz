@@ -2,30 +2,36 @@
 
 import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
 import { FaTrash, FaEdit } from 'react-icons/fa'
 
 export default function MyProductList() {
   const [products, setProducts] = useState<any[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const fetchProducts = async () => {
+  useEffect(() => {
     const user = auth.currentUser
     if (!user) return
 
-    const snapshot = await getDocs(collection(db, 'users', user.uid, 'products'))
-    const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    setProducts(productList)
-  }
+    const userProductsRef = collection(db, 'users', user.uid, 'products')
 
-  useEffect(() => {
-    fetchProducts()
+    // ✅ Real-time listener
+    const unsubscribe = onSnapshot(userProductsRef, snapshot => {
+      const productList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+      setProducts(productList)
+    })
+
+    return () => unsubscribe() // 🧹 Cleanup on unmount
   }, [])
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
   }
 
+  
   const handleDelete = async (id: string) => {
     const user = auth.currentUser
     if (!user) return
@@ -35,7 +41,7 @@ export default function MyProductList() {
 
     await deleteDoc(doc(db, 'users', user.uid, 'products', id))
     alert('Product deleted')
-    fetchProducts()
+    // 🔁 No need to call fetch again — realtime will auto-refresh
   }
 
   return (
