@@ -11,12 +11,13 @@ import MyProductList  from '../component/products/MyProductList'
 
 interface UserData {
   userId: string
+  name: string
   email: string
   role?: string
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'finance' | 'setting'
+type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -66,6 +67,7 @@ export default function UserDashboard() {
   const menuItems: { label: string; tab: Tab }[] = [
     { label: 'Home', tab: 'home' },
     { label: 'Product', tab: 'product' },
+    { label: 'Inventory', tab: 'inventory' },
     { label: 'Finance', tab: 'finance' },
     { label: 'Setting', tab: 'setting' },
   ]
@@ -84,6 +86,14 @@ export default function UserDashboard() {
             <MyProductList />
           </div>
         )
+
+      case 'inventory':
+        return (
+          <div className='bg-gray-600'>
+            <h1>Inventory management</h1>
+          </div>
+        )
+
       case 'finance':
         return (
           <div>

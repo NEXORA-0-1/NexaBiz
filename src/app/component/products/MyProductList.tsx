@@ -26,7 +26,7 @@ export default function MyProductList() {
       <ul className="space-y-2">
         {products.map(product => (
           <li key={product.id} className="border p-2 rounded">
-            <strong>{product.name}</strong> - ${product.price}
+            <strong>{product.name}</strong> - ${product.purchase_price}
           </li>
         ))}
       </ul>

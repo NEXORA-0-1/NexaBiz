@@ -4,7 +4,7 @@ import { auth, db } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 import { useState } from 'react'
 
-// ✅ Function to generate PID like PID4F7G9A2X1Z
+// ✅ Generate PID like PID4F7G9A2X1Z
 const generateProductID = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let result = 'PID'
@@ -16,7 +16,7 @@ const generateProductID = () => {
 
 export default function AddProductForm() {
   const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
+  const [purchasePrice, setPurchasePrice] = useState('')
 
   const handleAddProduct = async () => {
     const user = auth.currentUser
@@ -24,16 +24,19 @@ export default function AddProductForm() {
 
     const pid = generateProductID()
     const userProductsRef = collection(db, 'users', user.uid, 'products')
+
     await addDoc(userProductsRef, {
       pid,
       name,
-      price: parseFloat(price),
+      purchase_price: parseFloat(purchasePrice),
+      selling_price: 0,
+      qty: 0,
       createdAt: new Date()
     })
 
     alert(`Product added with ID: ${pid}`)
     setName('')
-    setPrice('')
+    setPurchasePrice('')
   }
 
   return (
@@ -48,9 +51,9 @@ export default function AddProductForm() {
       />
       <input
         type="number"
-        value={price}
-        onChange={e => setPrice(e.target.value)}
-        placeholder="Price"
+        value={purchasePrice}
+        onChange={e => setPurchasePrice(e.target.value)}
+        placeholder="Purchase Price"
         className="border px-2 py-1 rounded w-full mb-2"
       />
       <button
