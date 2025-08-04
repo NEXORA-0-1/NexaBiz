@@ -12,23 +12,37 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const generateUserId = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let result = 'UID'
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return result
+  }
+
   const handleSignup = async () => {
     try {
       setLoading(true)
+
       // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
 
-      // 2. Store additional user data in Firestore
+      // 2. Generate custom user ID
+      const generatedUserId = generateUserId()
+
+      // 3. Store additional user data in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         name: name,
         email: email,
-        role: 'user',         // 🔒 default role
-        approved: false,      // ⏳ waiting for admin approval
+        userId: generatedUserId,
+        role: 'user',         // default role
+        approved: false,      // waiting for admin approval
         createdAt: new Date()
       })
 
-      alert('Signup successful! Please wait for admin approval.')
+      alert(`Signup successful! Your User ID is ${generatedUserId}. Please wait for admin approval.`)
       router.push('/login') // Redirect to login page
     } catch (error: any) {
       console.error('Signup error:', error)
