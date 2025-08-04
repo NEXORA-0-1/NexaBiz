@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Home from '../component/home' 
+import AddProductForm from '../component/products/AddProductForm'
 
 interface UserData {
   userId: string
@@ -78,8 +79,7 @@ export default function UserDashboard() {
       case 'product':
         return (
           <div>
-            <h2 className="text-xl font-semibold mb-2">Product</h2>
-            <p>This is the Product page content.</p>
+            <AddProductForm />
           </div>
         )
       case 'finance':
