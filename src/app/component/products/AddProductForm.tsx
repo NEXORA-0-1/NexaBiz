@@ -4,6 +4,16 @@ import { auth, db } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 import { useState } from 'react'
 
+// ✅ Function to generate PID like PID4F7G9A2X1Z
+const generateProductID = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let result = 'PID'
+  for (let i = 0; i < 10; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
 export default function AddProductForm() {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
@@ -12,14 +22,16 @@ export default function AddProductForm() {
     const user = auth.currentUser
     if (!user) return alert('User not logged in')
 
+    const pid = generateProductID()
     const userProductsRef = collection(db, 'users', user.uid, 'products')
     await addDoc(userProductsRef, {
+      pid,
       name,
       price: parseFloat(price),
       createdAt: new Date()
     })
 
-    alert('Product added!')
+    alert(`Product added with ID: ${pid}`)
     setName('')
     setPrice('')
   }
