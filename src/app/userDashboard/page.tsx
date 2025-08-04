@@ -6,7 +6,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Home from '../component/home' 
-import AddProductForm from '../component/products/AddProductForm'
 import MyProductList  from '../component/products/MyProductList'
 import MyProductpage  from '../component/products/ProductPage'
 
@@ -83,15 +82,14 @@ export default function UserDashboard() {
       case 'product':
         return (
           <div>
-            <AddProductForm />
-            <MyProductList />
+            <MyProductpage />
           </div>
         )
 
       case 'inventory':
         return (
           <div>
-            <MyProductpage />
+            
           </div>
         )
 
