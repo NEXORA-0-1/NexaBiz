@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 
 interface User {
   id: string
+  userId: string
   email: string
   role?: string
   approved: boolean
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
       <table className="w-full border">
         <thead>
           <tr className="bg-gray-100">
+            <th className="p-2 border">USer ID</th>
             <th className="p-2 border">Email</th>
             <th className="p-2 border">Role</th>
             <th className="p-2 border">Approved</th>
@@ -58,6 +60,7 @@ export default function AdminDashboard() {
         <tbody>
           {users.map(user => (
             <tr key={user.id} className="border-t">
+              <td className="p-2 border">{user.userId}</td>
               <td className="p-2 border">{user.email}</td>
               <td className="p-2 border capitalize">{user.role || 'user'}</td>
               <td className="p-2 border">{user.approved ? 'Yes' : 'No'}</td>

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface UserData {
+  userId: string
   email: string
   role?: string
   approved: boolean
@@ -59,6 +60,7 @@ export default function UserDashboard() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">User Dashboard</h1>
       <div className="mb-4">
+        <p><strong>User ID:</strong> {userData.userId}</p>
         <p><strong>Email:</strong> {userData.email}</p>
         <p><strong>Role:</strong> {userData.role || 'user'}</p>
         <p><strong>Approved:</strong> {userData.approved ? 'Yes' : 'No'}</p>
