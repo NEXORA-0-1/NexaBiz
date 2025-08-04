@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Home from '../component/home' 
 import AddProductForm from '../component/products/AddProductForm'
+import MyProductList  from '../component/products/MyProductList'
 
 interface UserData {
   userId: string
@@ -78,8 +79,9 @@ export default function UserDashboard() {
         )
       case 'product':
         return (
-          <div>
+          <div className='bg-gray-600'>
             <AddProductForm />
+            <MyProductList />
           </div>
         )
       case 'finance':
