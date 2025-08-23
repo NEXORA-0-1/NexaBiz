@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
 import { FaTrash, FaEdit } from 'react-icons/fa'
+import EditProductModal from './EditProductModal' // Import it here
 
 export default function MyProductList() {
   const [products, setProducts] = useState<any[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [editingProduct, setEditingProduct] = useState<any | null>(null) // Track which product is being edited
 
   useEffect(() => {
     const user = auth.currentUser
@@ -15,7 +17,6 @@ export default function MyProductList() {
 
     const userProductsRef = collection(db, 'users', user.uid, 'products')
 
-    // ✅ Real-time listener
     const unsubscribe = onSnapshot(userProductsRef, snapshot => {
       const productList = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -24,14 +25,13 @@ export default function MyProductList() {
       setProducts(productList)
     })
 
-    return () => unsubscribe() // 🧹 Cleanup on unmount
+    return () => unsubscribe()
   }, [])
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
   }
 
-  
   const handleDelete = async (id: string) => {
     const user = auth.currentUser
     if (!user) return
@@ -41,7 +41,6 @@ export default function MyProductList() {
 
     await deleteDoc(doc(db, 'users', user.uid, 'products', id))
     alert('Product deleted')
-    // 🔁 No need to call fetch again — realtime will auto-refresh
   }
 
   return (
@@ -55,7 +54,7 @@ export default function MyProductList() {
           {products.map(product => (
             <div
               key={product.id}
-              className={`rounded-lg shadow-md bg-gray-500 hover:shadow-lg transition duration-300 p-4 border-l-4 ${
+              className={`rounded-lg shadow-md bg-white hover:shadow-lg transition duration-300 p-4 border-l-4 ${
                 product.qty === 0 ? 'border-red-500' : 'border-green-500'
               }`}
               onClick={() => handleToggleExpand(product.id)}
@@ -107,7 +106,7 @@ export default function MyProductList() {
                     <button
                       onClick={e => {
                         e.stopPropagation()
-                        alert('Edit coming soon!')
+                        setEditingProduct(product) // Open edit modal
                       }}
                       className="flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
                     >
@@ -120,6 +119,14 @@ export default function MyProductList() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+        />
       )}
     </div>
   )
