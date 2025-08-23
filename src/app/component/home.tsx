@@ -70,7 +70,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Orders</h3>
-            <p className="text-2xl font-bold">157</p>
+            <p className="text-2xl font-bold">201</p>
           </div>
         </div>
       </div>
