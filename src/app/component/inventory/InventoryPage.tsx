@@ -1,12 +1,13 @@
 'use client'
 
-
-import { useEffect, useState } from 'react'
-import AddInventoryModal  from '../inventory/AddInventoryModel'
-import MyProductList  from '../products/MyProductList'
+import { useState } from 'react'
+import TransactionModal from '../inventory/TransactionModal'
+import AddStockModal from '../inventory/AddStockModal'
+import MyProductList from '../products/MyProductList'
 
 export default function InventoryPage() {
-  const [showModal, setShowModal] = useState(false)
+  const [showStockModal, setShowStockModal] = useState(false)
+  const [showTransactionModal, setShowTransactionModal] = useState(false)
   const [refresh, setRefresh] = useState(false)
 
   const handleAddSuccess = () => {
@@ -15,20 +16,38 @@ export default function InventoryPage() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center mb-4 gap-2">
+        {/* Stock Button */}
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowStockModal(true)}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
-          + Add Inventory
+          Stock
+        </button>
+
+        {/* Transaction Button */}
+        <button
+          onClick={() => setShowTransactionModal(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Transaction
         </button>
       </div>
 
-      <MyProductList />
+      <MyProductList key={refresh ? 'refresh-1' : 'refresh-0'} />
 
-      {showModal && (
-        <AddInventoryModal
-          onClose={() => setShowModal(false)}
+      {/* Stock Modal */}
+      {showStockModal && (
+        <AddStockModal
+          onClose={() => setShowStockModal(false)}
+          onSuccess={handleAddSuccess}
+        />
+      )}
+
+      {/* Transaction Modal */}
+      {showTransactionModal && (
+        <TransactionModal
+          onClose={() => setShowTransactionModal(false)}
           onSuccess={handleAddSuccess}
         />
       )}
