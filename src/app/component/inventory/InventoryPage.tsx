@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import TransactionModal from '../inventory/TransactionModal'
 import AddStockModal from '../inventory/AddStockModal'
-import MyProductList from '../products/MyProductList'
+import TrnsactionList from '../inventory/TrnsactionList'
+
 
 export default function InventoryPage() {
   const [showStockModal, setShowStockModal] = useState(false)
@@ -34,7 +35,7 @@ export default function InventoryPage() {
         </button>
       </div>
 
-      <MyProductList key={refresh ? 'refresh-1' : 'refresh-0'} />
+      <TrnsactionList key={refresh ? 'refresh-1' : 'refresh-0'} />
 
       {/* Stock Modal */}
       {showStockModal && (

@@ -83,27 +83,30 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
   const totalAmount = items.reduce((sum, i) => sum + i.qty * i.selling_price, 0)
 
   // Save transaction
-  const handleSaveTransaction = async () => {
-    const user = auth.currentUser
-    if (!user) return alert('User not logged in')
+ const handleSaveTransaction = async () => {
+  const user = auth.currentUser
+  if (!user) return alert('User not logged in')
 
-    const tid = generateTransactionID()
-    const userTransactionsRef = collection(db, 'users', user.uid, 'transactions')
+  const tid = generateTransactionID()
+  const userTransactionsRef = collection(db, 'users', user.uid, 'transactions')
 
-    await addDoc(userTransactionsRef, {
-      tid,
-      cus_name,
-      items: items.map(i => ({
-        ...i,
-        subtotal: i.qty * i.selling_price
-      })),
-      total_amount: totalAmount,
-      createdAt: new Date()
-    })
+  await addDoc(userTransactionsRef, {
+    tid,
+    cus_name,
+    items: items.map(i => ({
+      ...i,
+      subtotal: i.qty * i.selling_price
+    })),
+    total_amount: totalAmount,
+    createdAt: new Date()
+  })
 
-    onSuccess()
-    onClose()
-  }
+  // ✅ Show success alert
+  window.alert("✅ Transaction saved successfully!")
+
+  onSuccess()
+  onClose()
+}
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
