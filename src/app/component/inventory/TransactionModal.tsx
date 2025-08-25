@@ -1,7 +1,13 @@
 'use client'
 
 import { auth, db } from '@/lib/firebase'
-import { collection, addDoc, getDocs } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  runTransaction
+} from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 
 type Props = {
@@ -19,16 +25,19 @@ const generateTransactionID = () => {
 }
 
 type Product = {
-  pid: string
+  id: string        // Firestore document ID
+  pid: string       // Your product code field
   name: string
   selling_price: number
+  qty: number       // Current stock in product doc
 }
 
 type ItemRow = {
-  pid: string
-  product_name: string
-  selling_price: number
-  qty: number
+  productId: string     // Firestore document ID (for updates)
+  pid: string           // Snapshot of product code
+  product_name: string  // Snapshot of name
+  selling_price: number // Snapshot of price
+  qty: number           // Quantity to sell
 }
 
 export default function AddTransactionModal({ onClose, onSuccess }: Props) {
@@ -44,9 +53,11 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
       const snap = await getDocs(collection(db, 'users', user.uid, 'products'))
       const productList: Product[] = snap.docs.map(d => ({
+        id: d.id,
         pid: d.data().pid,
         name: d.data().name,
-        selling_price: d.data().selling_price
+        selling_price: Number(d.data().selling_price || 0),
+        qty: Number(d.data().qty || 0),
       }))
       setProducts(productList)
     }
@@ -55,58 +66,114 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
   // Add a blank row
   const handleAddRow = () => {
-    setItems([...items, { pid: '', product_name: '', selling_price: 0, qty: 1 }])
+    setItems(prev => [
+      ...prev,
+      { productId: '', pid: '', product_name: '', selling_price: 0, qty: 1 }
+    ])
   }
 
   // When product is selected from dropdown
-  const handleSelectProduct = (index: number, pid: string) => {
-    const product = products.find(p => p.pid === pid)
+  const handleSelectProduct = (index: number, productId: string) => {
+    const product = products.find(p => p.id === productId)
     if (!product) return
     const updated = [...items]
     updated[index] = {
+      productId: product.id,
       pid: product.pid,
       product_name: product.name,
       selling_price: product.selling_price,
-      qty: updated[index].qty || 1
+      qty: updated[index]?.qty || 1
     }
     setItems(updated)
   }
 
   // Update quantity
-  const handleQtyChange = (index: number, qty: string) => {
+  const handleQtyChange = (index: number, qtyStr: string) => {
+    const qty = Math.max(1, Number(qtyStr || 0))
     const updated = [...items]
-    updated[index].qty = Number(qty)
+    updated[index].qty = qty
     setItems(updated)
   }
 
   // Calculate totals
   const totalAmount = items.reduce((sum, i) => sum + i.qty * i.selling_price, 0)
 
-  // Save transaction
- const handleSaveTransaction = async () => {
-  const user = auth.currentUser
-  if (!user) return alert('User not logged in')
+  // Save transaction (with stock checks + deductions)
+  const handleSaveTransaction = async () => {
+    const user = auth.currentUser
+    if (!user) return window.alert('User not logged in')
+    if (!cus_name.trim()) return window.alert('Please enter customer name')
+    if (items.length === 0) return window.alert('Add at least one product')
+    if (items.some(i => !i.productId)) return window.alert('Please select a product on all rows')
 
-  const tid = generateTransactionID()
-  const userTransactionsRef = collection(db, 'users', user.uid, 'transactions')
+    // Merge duplicate rows by productId
+    const mergedMap = new Map<string, ItemRow>()
+    for (const i of items) {
+      const key = i.productId
+      if (!mergedMap.has(key)) {
+        mergedMap.set(key, { ...i })
+      } else {
+        const prev = mergedMap.get(key)!
+        mergedMap.set(key, {
+          ...prev,
+          qty: prev.qty + i.qty
+        })
+      }
+    }
+    const mergedItems = Array.from(mergedMap.values())
+    const mergedTotal = mergedItems.reduce((s, i) => s + i.qty * i.selling_price, 0)
 
-  await addDoc(userTransactionsRef, {
-    tid,
-    cus_name,
-    items: items.map(i => ({
-      ...i,
-      subtotal: i.qty * i.selling_price
-    })),
-    total_amount: totalAmount,
-    createdAt: new Date()
-  })
+    const tid = generateTransactionID()
+    const userTransactionsRef = collection(db, 'users', user.uid, 'transactions')
 
-  // ✅ Show success alert
-  window.alert("✅ Transaction saved successfully!")
+    try {
+      await runTransaction(db, async (tx) => {
+        // 1) Validate and deduct stock for each product
+        for (const item of mergedItems) {
+          const productRef = doc(db, 'users', user.uid, 'products', item.productId)
+          const productSnap = await tx.get(productRef)
 
-  onSuccess()
-  onClose()
-}
+          if (!productSnap.exists()) {
+            throw new Error(`Product not found: ${item.product_name || item.pid}`)
+          }
+
+          const data = productSnap.data() as any
+          const currentQty = Number(data.qty || 0)
+
+          if (item.qty > currentQty) {
+            throw new Error(
+              `Not enough stock for ${item.product_name}. Available: ${currentQty}, Requested: ${item.qty}`
+            )
+          }
+
+          tx.update(productRef, { qty: currentQty - item.qty })
+        }
+
+        // 2) Create transaction document (atomic with stock updates)
+        const newTxRef = doc(userTransactionsRef)
+        tx.set(newTxRef, {
+          tid,
+          cus_name,
+          items: mergedItems.map(i => ({
+            pid: i.pid,
+            product_name: i.product_name,
+            selling_price: i.selling_price,
+            qty: i.qty,
+            subtotal: i.qty * i.selling_price
+          })),
+          total_amount: mergedTotal,
+          createdAt: new Date()
+        })
+      })
+
+      window.alert('✅ Transaction saved & stock updated!')
+      onSuccess()
+      onClose()
+    } catch (err: any) {
+      console.error(err)
+      window.alert(`❌ Error: ${err.message}`)
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
@@ -136,22 +203,25 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
               <tr key={idx}>
                 <td className="p-2 border">
                   <select
-                    value={i.pid}
+                    value={i.productId}
                     onChange={e => handleSelectProduct(idx, e.target.value)}
                     className="border px-2 py-1 rounded w-full"
                   >
                     <option value="">Select Product</option>
                     {products.map(p => (
-                      <option key={p.pid} value={p.pid}>
-                        {p.name}
+                      <option key={p.id} value={p.id}>
+                        {p.name} (Stock: {p.qty})
                       </option>
                     ))}
                   </select>
                 </td>
-                <td className="p-2 border text-right">{i.selling_price}</td>
+                <td className="p-2 border text-right">
+                  {i.selling_price.toFixed(2)}
+                </td>
                 <td className="p-2 border">
                   <input
                     type="number"
+                    min={1}
                     value={i.qty}
                     onChange={e => handleQtyChange(idx, e.target.value)}
                     className="border px-2 py-1 rounded w-full"
