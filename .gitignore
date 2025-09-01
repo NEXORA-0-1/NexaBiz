@@ -50,6 +50,7 @@ __pycache__/
 /backend/*.log
 /ai/*.log
 /ai/venv/
+/ai/demand_predictor_logs.txt
 
 # IDE/project files
 .idea/
