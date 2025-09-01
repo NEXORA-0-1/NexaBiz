@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example  # Optional: Keep a template if you want
 
 # vercel
 .vercel
@@ -39,3 +40,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python virtual environments
+venv/
+*.pyc
+__pycache__/
+
+# Backend-specific files
+/backend/serviceAccountKey.json  # Firebase key - sensitive
+/backend/*.log  # Logs from Node.js if generated
+/ai/*.log  # Agent logs (e.g., agent_logs.txt from Python)
+
+# IDE/project files
+.idea/  # IntelliJ/PyCharm
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Local configuration
+tsconfig.tsbuildinfo
