@@ -36,6 +36,7 @@ app.post('/api/forecast', authenticate, [
 
   const { query } = req.body;
   const userId = req.user.uid;
+  console.log('Received query:', query, 'User ID:', userId); //debug
 
   try {
     // IR: Fetch stock data from products collection
