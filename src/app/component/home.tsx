@@ -28,6 +28,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
   const handleForecast = async () => {
     try {
       const idToken = await auth.currentUser?.getIdToken()
+      console.log('Sending query:', query); // Debug: Log query
       const response = await fetch('http://localhost:3001/api/forecast', {
         method: 'POST',
         headers: {

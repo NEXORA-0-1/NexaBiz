@@ -24,6 +24,7 @@ def predict_demand():
         query = data.get('query', '').strip()
         stock_data = data.get('stock_data', [])
         transaction_data = data.get('transaction_data', [])
+        logging.info(f"Received: query={query}, stock_data={stock_data}, transaction_data={transaction_data}") # Debug
 
         if not query or not stock_data or not transaction_data:
             return jsonify({'error': 'Insufficient data'}), 400
@@ -57,7 +58,11 @@ def predict_demand():
             return jsonify({'error': f'No transactions found for {product}'}), 400
 
         # Prepare features for Linear Regression
+        current_stock = df_stock[df_stock['name'] == product]['qty'].iloc[0] if product in df_stock['name'].values else 0
+        product_sales = df_transactions[df_transactions['product_name'] == product]['qty'].sum() if not df_transactions.empty else 0
         total_sales = df_transactions['qty'].sum() if not df_transactions.empty else 1
+        sales_ratio = product_sales / total_sales if total_sales > 0 else 0
+        logging.info(f"Processed: product={product}, current_stock={current_stock}, product_sales={product_sales}") # Debug
         X = []
         y = []
 
