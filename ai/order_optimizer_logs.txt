@@ -1,0 +1,19 @@
+2025-09-03 23:00:47,781 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.8.102:5001
+2025-09-03 23:00:47,781 - INFO - [33mPress CTRL+C to quit[0m
+2025-09-03 23:00:47,782 - INFO -  * Restarting with stat
+2025-09-03 23:00:49,512 - WARNING -  * Debugger is active!
+2025-09-03 23:00:49,518 - INFO -  * Debugger PIN: 103-495-767
+2025-09-03 23:23:11,501 - INFO - Query: Bell Pepper, Product: Bell pepper, Stock: 86, Forecast: 95.99999999999996, Order: 20, Cost: 280, Recommendation: Optimized order for Bell pepper based on 8 transactions.
+2025-09-03 23:23:11,508 - INFO - 127.0.0.1 - - [03/Sep/2025 23:23:11] "POST /optimize_order HTTP/1.1" 200 -
+2025-09-03 23:28:06,301 - WARNING - Insufficient records for Gowa: 2 records, using fallback
+2025-09-03 23:28:06,302 - INFO - Query: gowa, Product: Gowa, Stock: 5, Forecast: 5, Order: 10, Cost: 1520, Recommendation: Limited records for Gowa. Order based on forecast.
+2025-09-03 23:28:06,302 - INFO - 127.0.0.1 - - [03/Sep/2025 23:28:06] "POST /optimize_order HTTP/1.1" 200 -
+2025-09-03 23:28:08,193 - WARNING - Insufficient records for Gowa: 2 records, using fallback
+2025-09-03 23:28:08,194 - INFO - Query: gowa, Product: Gowa, Stock: 5, Forecast: 5, Order: 10, Cost: 1520, Recommendation: Limited records for Gowa. Order based on forecast.
+2025-09-03 23:28:08,196 - INFO - 127.0.0.1 - - [03/Sep/2025 23:28:08] "POST /optimize_order HTTP/1.1" 200 -
+2025-09-03 23:29:47,384 - WARNING - Insufficient records for Gowa: 2 records, using fallback
+2025-09-03 23:29:47,384 - INFO - Query: gowa, Product: Gowa, Stock: 25, Forecast: 5, Order: 10, Cost: 1520, Recommendation: Limited records for Gowa. Order based on forecast.
+2025-09-03 23:29:47,385 - INFO - 127.0.0.1 - - [03/Sep/2025 23:29:47] "POST /optimize_order HTTP/1.1" 200 -

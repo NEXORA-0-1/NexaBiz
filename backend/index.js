@@ -43,7 +43,8 @@ app.post('/api/forecast', authenticate, [
     const stock_data = productsSnap.docs.map(doc => ({
       id: doc.id,
       name: doc.data().name,
-      qty: Number(doc.data().qty || 0)
+      qty: Number(doc.data().qty || 0),
+      purchase_price: Number(doc.data().purchase_price || 0) // Added for Order Optimizer
     }));
 
     // IR: Fetch transaction data
@@ -57,16 +58,39 @@ app.post('/api/forecast', authenticate, [
       }));
     });
 
-    // Call Python Agent
-    const agentResponse = await axios.post('http://127.0.0.1:5000/predict_demand', {
+    // Call Demand Predictor Agent
+    const demandResponse = await axios.post('http://127.0.0.1:5000/predict_demand', {
       query,
       stock_data,
       transaction_data
-    });
+    }, { timeout: 10000, validateStatus: status => status < 500 });
 
-    res.json(agentResponse.data);
+    if (demandResponse.status >= 400) {
+      console.error('Demand Predictor error:', demandResponse.data);
+      return res.status(demandResponse.status).json(demandResponse.data);
+    }
+
+    // Call Order Optimizer Agent
+    const optimizerResponse = await axios.post('http://127.0.0.1:5001/optimize_order', {
+      query,
+      stock_data,
+      transaction_data,
+      forecast_data: demandResponse.data
+    }, { timeout: 10000, validateStatus: status => status < 500 });
+
+    if (optimizerResponse.status >= 400) {
+      console.error('Order Optimizer error:', optimizerResponse.data);
+      return res.status(optimizerResponse.status).json(optimizerResponse.data);
+    }
+
+    // Combine results
+    res.json({
+      demand: demandResponse.data,
+      order: optimizerResponse.data
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Backend error:', error.message);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

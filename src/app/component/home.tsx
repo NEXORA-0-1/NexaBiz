@@ -1,4 +1,3 @@
-// components/Home.tsx
 'use client'
 
 import React, { useState } from 'react'
@@ -103,7 +102,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
         {/* Demand Forecast Section */}
         <div className="mt-6 p-6 bg-blue-50 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Demand Forecast</h2>
+          <h2 className="text-xl font-semibold mb-2">Demand Forecast & Optimization</h2>
           <input
             type="text"
             value={query}
@@ -115,12 +114,43 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
             onClick={handleForecast}
             className="bg-blue-600 text-white p-2 rounded"
           >
-            Predict
+            Predict & Optimize
           </button>
           {result && (
             <div className="mt-4 p-4 bg-gray-100 rounded">
-              <h3>Result:</h3>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
+              <h3 className="font-semibold">Results:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold">Demand Prediction:</h4>
+                  {result.demand?.error ? (
+                    <p className="text-red-500">{result.demand.error}</p>
+                  ) : (
+                    <>
+                      <p><strong>Product:</strong> {result.demand?.product || 'N/A'}</p>
+                      <p><strong>Period:</strong> {result.demand?.period || 'N/A'}</p>
+                      <p><strong>Current Stock:</strong> {result.demand?.current_stock ?? 'N/A'}</p>
+                      <p><strong>Past Sales:</strong> {result.demand?.past_sales ?? 'N/A'}</p>
+                      <p><strong>Forecasted Demand:</strong> {result.demand?.forecast_demand?.toFixed(2) || 'N/A'}</p>
+                      <p><strong>Insight:</strong> {result.demand?.insight || 'N/A'}</p>
+                    </>
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-semibold">Order Optimization:</h4>
+                  {result.order?.error ? (
+                    <p className="text-red-500">{result.order.error}</p>
+                  ) : (
+                    <>
+                      <p><strong>Product:</strong> {result.order?.product || 'N/A'}</p>
+                      <p><strong>Current Stock:</strong> {result.order?.current_stock ?? 'N/A'}</p>
+                      <p><strong>Forecasted Demand:</strong> {result.order?.forecast_demand?.toFixed(2) || 'N/A'}</p>
+                      <p><strong>Order Quantity:</strong> {result.order?.order_quantity ?? 'N/A'}</p>
+                      <p><strong>Order Cost:</strong> ${result.order?.order_cost?.toFixed(2) || 'N/A'}</p>
+                      <p><strong>Recommendation:</strong> {result.order?.recommendation || 'N/A'}</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
