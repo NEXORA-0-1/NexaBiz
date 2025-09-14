@@ -8,12 +8,18 @@ const { body, validationResult } = require('express-validator');
 dotenv.config();
 
 const serviceAccount = require('./serviceAccountKey.json');
+if (!admin.apps.length) {
+
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+}
 const db = admin.firestore();
 
+//create Express app
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+
 
 // Auth middleware
 const authenticate = async (req, res, next) => {
@@ -34,6 +40,9 @@ app.post('/api/forecast', authenticate, [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+  
+  const admin = require('firebase-admin');
+  const serviceAccount = require('../serviceAccountKey.json');
   const { query } = req.body;
   const userId = req.user.uid;
 
@@ -71,3 +80,15 @@ app.post('/api/forecast', authenticate, [
 });
 
 app.listen(process.env.PORT || 3001, () => console.log(`Backend on port ${process.env.PORT || 3001}`));
+
+
+
+
+// Simple test route
+app.get("/", (req, res) => {
+  res.send("Backend is running on port 5000 🚀");
+});
+
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Backend on port ${PORT}`));
