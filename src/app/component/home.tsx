@@ -28,14 +28,15 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
   const handleForecast = async () => {
     try {
       const idToken = await auth.currentUser?.getIdToken()
-      const response = await fetch('http://localhost:3001/api/forecast', {
+      const response = await fetch('http://localhost:5000/api/forecast', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({ query })
-      })
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json()
       setResult(data)
     } catch (error) {
