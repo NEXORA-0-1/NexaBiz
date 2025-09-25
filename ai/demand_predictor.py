@@ -32,6 +32,10 @@ except Exception as e:
 # Flask app
 app = Flask(__name__)
 
+def normalize_name(name: str) -> str:
+    """Normalize product names for consistent comparison."""
+    return name.strip().lower() if isinstance(name, str) else ""
+
 @app.route('/predict_demand', methods=['POST'])
 def predict_demand():
     try:
@@ -55,21 +59,36 @@ def predict_demand():
             logging.info(f"Fallback product: {product}")
         period = next((ent.text for ent in doc.ents if ent.label_ in ['DATE', 'TIME']), 'month')
 
+        # Normalize product name
+        product_norm = normalize_name(product)
+
         # Convert to DataFrames
         df_stock = pd.DataFrame(stock_data)
         df_transactions = pd.DataFrame(transaction_data)
 
+        # Normalize names in DataFrames
+        if not df_stock.empty and 'name' in df_stock.columns:
+            df_stock['name_norm'] = df_stock['name'].apply(normalize_name)
+        if not df_transactions.empty and 'product_name' in df_transactions.columns:
+            df_transactions['product_name_norm'] = df_transactions['product_name'].apply(normalize_name)
+
         # Validate product in stock
-        if not df_stock.empty and product not in df_stock['name'].values:
+        if not df_stock.empty and product_norm not in df_stock['name_norm'].values:
             logging.warning(f"Product {product} not found in stock_data")
             return jsonify({'error': f'Product {product} not found in stock'}), 400
 
         # Calculate values
-        current_stock = int(df_stock[df_stock['name'] == product]['qty'].iloc[0]) if product in df_stock['name'].values else 0
-        product_sales = int(df_transactions[df_transactions['product_name'] == product]['qty'].sum()) if not df_transactions.empty else 0
+        current_stock = int(
+            df_stock[df_stock['name_norm'] == product_norm]['qty'].iloc[0]
+        ) if product_norm in df_stock['name_norm'].values else 0
+
+        product_sales = int(
+            df_transactions[df_transactions['product_name_norm'] == product_norm]['qty'].sum()
+        ) if not df_transactions.empty else 0
+
         total_sales = int(df_transactions['qty'].sum()) if not df_transactions.empty else 1
         sales_ratio = product_sales / total_sales if total_sales > 0 else 0
-        logging.info(f"Processed: product={product}, current_stock={current_stock}, product_sales={product_sales}")
+        logging.info(f"Processed: product={product_norm}, current_stock={current_stock}, product_sales={product_sales}")
 
         # Simple regression model
         X = [[current_stock, sales_ratio]]
