@@ -15,7 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Firebase Auth Middleware
+// Auth middleware
 const authenticate = async (req, res, next) => {
   const idToken = req.headers.authorization?.split('Bearer ')[1];
   if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
@@ -24,12 +24,10 @@ const authenticate = async (req, res, next) => {
     req.user = decodedToken;
     next();
   } catch (error) {
-    console.error("Auth error:", error);
     res.status(401).json({ error: 'Invalid token' });
   }
 };
 
-// ✅ Forecast + Optimizer Endpoint
 app.post('/api/forecast', authenticate, [
   body('query').trim().escape()
 ], async (req, res) => {
@@ -38,65 +36,39 @@ app.post('/api/forecast', authenticate, [
 
   const { query } = req.body;
   const userId = req.user.uid;
+  console.log('Received query:', query, 'User ID:', userId); //debug
 
   try {
-    // 🔹 Fetch stock data from Firestore
+    // IR: Fetch stock data from products collection
     const productsSnap = await db.collection('users').doc(userId).collection('products').get();
     const stock_data = productsSnap.docs.map(doc => ({
       id: doc.id,
       name: doc.data().name,
-      qty: Number(doc.data().qty || 0),
-      purchase_price: Number(doc.data().purchase_price || 0)
+      qty: Number(doc.data().qty || 0)
     }));
 
-    // 🔹 Fetch transaction data
+    // IR: Fetch transaction data
     const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
     const transaction_data = transactionsSnap.docs.flatMap(doc => {
       const items = doc.data().items || [];
       return items.map(item => ({
         product_name: item.product_name,
         qty: Number(item.qty || 0),
-        date: doc.data().createdAt?.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0]
+        date: doc.data().createdAt?.toDate().toISOString().split('T')[0]  // Simplified date
       }));
     });
 
-    // ✅ Step 1: Call Demand Predictor Agent
-    const demandResponse = await axios.post('http://127.0.0.1:5000/predict_demand', {
+    // Call Python Agent
+    const agentResponse = await axios.post('http://127.0.0.1:5000/predict_demand', {
       query,
       stock_data,
       transaction_data
-    }, { timeout: 10000, validateStatus: status => status < 500 });
-
-    if (demandResponse.status >= 400) {
-      console.error('Demand Predictor error:', demandResponse.data);
-      return res.status(demandResponse.status).json({ demand: { error: "Demand predictor failed" } });
-    }
-
-    // ✅ Step 2: Call Order Optimizer Agent (new API structure from order_optimizer.py)
-    const optimizerResponse = await axios.post('http://127.0.0.1:5001/optimize_order', {
-      query,
-      stock_data,
-      transaction_data,
-      forecast_data: demandResponse.data   // 🔹 Pass forecast result here
-    }, { timeout: 10000, validateStatus: status => status < 500 });
-
-    if (optimizerResponse.status >= 400) {
-      console.error('Order Optimizer error:', optimizerResponse.data);
-      return res.status(optimizerResponse.status).json({ order: { error: "Order optimizer failed" } });
-    }
-
-    // ✅ Step 3: Combine both responses cleanly
-    res.json({
-      demand: demandResponse.data,
-      order: optimizerResponse.data
     });
 
+    res.json(agentResponse.data);
   } catch (error) {
-    console.error('Backend error:', error.message);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ✅ Server Startup
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(process.env.PORT || 3001, () => console.log(`Backend on port ${process.env.PORT || 3001}`));
