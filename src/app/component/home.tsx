@@ -1,8 +1,10 @@
 // components/Home.tsx
+'use client'
 
 import React, { useState } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { auth } from "@/lib/firebase";
 
 interface UserData {
   userId: string
@@ -18,8 +20,30 @@ interface HomeProps {
 
 const Home: React.FC<HomeProps> = ({ userData }) => {
   const [showProfile, setShowProfile] = useState(false)
+  const [query, setQuery] = useState('')
+  const [result, setResult] = useState<any>(null)
 
   const toggleProfile = () => setShowProfile(prev => !prev)
+
+  const handleForecast = async () => {
+    try {
+      const idToken = await auth.currentUser?.getIdToken()
+      console.log('Sending query:', query); // Debug: Log query
+      const response = await fetch('http://localhost:3001/api/forecast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ query })
+      })
+      const data = await response.json()
+      setResult(data)
+    } catch (error) {
+      console.error('Forecast error:', error)
+      setResult({ error: 'Failed to fetch forecast' })
+    }
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-blue-900 p-8">
@@ -56,10 +80,14 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
       {/* Main Card */}
       <div className="bg-white bg-opacity-80 backdrop-blur-md rounded-2xl shadow-xl p-8">
-        <p className="text-xl mb-4">Welcome back, <span className="font-semibold">{userData.name}</span> 👋</p>
+
+        {/* Welcome Message */}
+        <p className="text-xl mb-4">
+          Welcome back, <span className="font-semibold">{userData.name}</span> 👋
+        </p>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Total Sales</h3>
             <p className="text-2xl font-bold">$12,340</p>
@@ -73,6 +101,31 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
             <p className="text-2xl font-bold">201</p>
           </div>
         </div>
+
+        {/* Demand Forecast Section */}
+        <div className="mt-6 p-6 bg-blue-50 rounded-xl shadow-md">
+          <h2 className="text-xl font-semibold mb-2">Demand Forecast</h2>
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="e.g., Predict demand for green leaves next month"
+            className="border p-2 w-full mb-2 rounded"
+          />
+          <button
+            onClick={handleForecast}
+            className="bg-blue-600 text-white p-2 rounded"
+          >
+            Predict
+          </button>
+          {result && (
+            <div className="mt-4 p-4 bg-gray-100 rounded">
+              <h3>Result:</h3>
+              <pre>{JSON.stringify(result, null, 2)}</pre>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   )
