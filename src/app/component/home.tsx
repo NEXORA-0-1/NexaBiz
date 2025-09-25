@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase"
 
 interface UserData {
   userId: string
@@ -116,10 +116,13 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           >
             Predict & Optimize
           </button>
+
           {result && (
             <div className="mt-4 p-4 bg-gray-100 rounded">
-              <h3 className="font-semibold">Results:</h3>
+              <h3 className="font-semibold mb-4">Results:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Demand Prediction */}
                 <div>
                   <h4 className="font-semibold">Demand Prediction:</h4>
                   {result.demand?.error ? (
@@ -135,6 +138,8 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                     </>
                   )}
                 </div>
+
+                {/* Order Optimization */}
                 <div>
                   <h4 className="font-semibold">Order Optimization:</h4>
                   {result.order?.error ? (
@@ -147,6 +152,15 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                       <p><strong>Order Quantity:</strong> {result.order?.order_quantity ?? 'N/A'}</p>
                       <p><strong>Order Cost:</strong> ${result.order?.order_cost?.toFixed(2) || 'N/A'}</p>
                       <p><strong>Recommendation:</strong> {result.order?.recommendation || 'N/A'}</p>
+
+                      {/* 🔹 Scenarios Section */}
+                      {result.order?.scenarios && (
+                        <div className="mt-3 p-3 bg-blue-100 rounded">
+                          <h5 className="font-semibold">What-If Scenarios:</h5>
+                          <p><strong>+20% Demand:</strong> {result.order.scenarios.what_if_demand_20}</p>
+                          <p><strong>Within $500 Budget:</strong> {result.order.scenarios.budget_500}</p>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
