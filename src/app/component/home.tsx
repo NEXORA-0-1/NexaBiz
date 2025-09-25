@@ -102,26 +102,34 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           </div>
         </div>
 
-        {/* Demand Forecast Section */}
+        {/* Nexabiz AI Section */}
         <div className="mt-6 p-6 bg-blue-50 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Demand Forecast</h2>
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="e.g., Predict demand for green leaves next month"
-            className="border p-2 w-full mb-2 rounded"
-          />
-          <button
-            onClick={handleForecast}
-            className="bg-blue-600 text-white p-2 rounded"
-          >
-            Predict
-          </button>
+          <h2 className="text-xl font-semibold mb-2">Nexabiz AI</h2>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Ask me about product demand, orders, or stock"
+              className="border p-2 w-full rounded"
+              onKeyDown={e => e.key === 'Enter' && handleForecast()} // Press Enter to send
+            />
+            <button
+              onClick={handleForecast}
+              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition"
+              title="Ask Nexabiz AI"
+            >
+              {/* Symbol like ChatGPT icon (using SVG) */}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+            </button>
+          </div>
+
           {result && (
-            <div className="mt-4 p-4 bg-gray-100 rounded">
-              <h3>Result:</h3>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
+            <div className="mt-4 p-4 bg-gray-100 rounded max-h-80 overflow-y-auto">
+              <h3 className="font-medium mb-2">Response:</h3>
+              <pre className="whitespace-pre-wrap break-words">{JSON.stringify(result, null, 2)}</pre>
             </div>
           )}
         </div>
