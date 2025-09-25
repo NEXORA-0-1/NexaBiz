@@ -51,7 +51,7 @@ __pycache__/
 /ai/*.log
 /ai/venv/
 /ai/demand_predictor_logs.txt
-/ai/order_optimizer_logs.txt
+
 
 # IDE/project files
 .idea/

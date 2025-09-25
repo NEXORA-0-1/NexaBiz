@@ -1,10 +1,10 @@
-// components/Home.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase"
+import { collection, getDocs } from "firebase/firestore"
 
 interface UserData {
   userId: string
@@ -23,12 +23,19 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
   const [query, setQuery] = useState('')
   const [result, setResult] = useState<any>(null)
 
+  // 🔹 Analytics state
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    monthlyRevenue: 0,
+    orders: 0,
+  })
+
   const toggleProfile = () => setShowProfile(prev => !prev)
 
   const handleForecast = async () => {
     try {
       const idToken = await auth.currentUser?.getIdToken()
-      console.log('Sending query:', query); // Debug: Log query
+      console.log('Sending query:', query)
       const response = await fetch('http://localhost:3001/api/forecast', {
         method: 'POST',
         headers: {
@@ -44,6 +51,55 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
       setResult({ error: 'Failed to fetch forecast' })
     }
   }
+
+  // 🔹 Fetch analytics from Firestore
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const user = auth.currentUser
+        if (!user) return
+
+        // 👇 Use the correct path
+        const transactionsRef = collection(db, "users", user.uid, "transactions")
+        const snapshot = await getDocs(transactionsRef)
+
+        let totalSales = 0
+        let monthlyRevenue = 0
+        let ordersCount = snapshot.size
+
+        const now = new Date()
+        const currentMonth = now.getMonth()
+        const currentYear = now.getFullYear()
+
+        snapshot.forEach((doc) => {
+          const data = doc.data()
+          const orderAmount = Number(data.total_amount) || 0
+          totalSales += orderAmount
+
+          // ✅ Handle Firestore Timestamp safely
+          if (data.createdAt?.toDate) {
+            const orderDate = data.createdAt.toDate()
+            if (
+              orderDate.getMonth() === currentMonth &&
+              orderDate.getFullYear() === currentYear
+            ) {
+              monthlyRevenue += orderAmount
+            }
+          }
+        })
+
+        setStats({
+          totalSales,
+          monthlyRevenue,
+          orders: ordersCount,
+        })
+      } catch (err) {
+        console.error("Error fetching stats:", err)
+      }
+    }
+
+    fetchStats()
+  }, [])
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-blue-900 p-8">
@@ -90,15 +146,15 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Total Sales</h3>
-            <p className="text-2xl font-bold">$12,340</p>
+            <p className="text-2xl font-bold">Rs.{stats.totalSales.toLocaleString()}</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Monthly Revenue</h3>
-            <p className="text-2xl font-bold">$3,210</p>
+            <p className="text-2xl font-bold">Rs.{stats.monthlyRevenue.toLocaleString()}</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Orders</h3>
-            <p className="text-2xl font-bold">201</p>
+            <p className="text-2xl font-bold">{stats.orders}</p>
           </div>
         </div>
 
