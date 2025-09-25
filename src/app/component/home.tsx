@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { auth, db } from "@/lib/firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, Timestamp } from "firebase/firestore"
 
 interface UserData {
   userId: string
@@ -59,34 +59,58 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         const user = auth.currentUser
         if (!user) return
 
-        // 👇 Use the correct path
-        const transactionsRef = collection(db, "users", user.uid, "transactions")
-        const snapshot = await getDocs(transactionsRef)
-
-        let totalSales = 0
-        let monthlyRevenue = 0
-        let ordersCount = snapshot.size
-
         const now = new Date()
         const currentMonth = now.getMonth()
         const currentYear = now.getFullYear()
 
-        snapshot.forEach((doc) => {
+        // --- Transactions ---
+        const transactionsRef = collection(db, "users", user.uid, "transactions")
+        const transactionsSnap = await getDocs(transactionsRef)
+
+        let totalSales = 0
+        let monthlyTransactionRevenue = 0
+        let ordersCount = transactionsSnap.size
+
+        transactionsSnap.forEach((doc) => {
           const data = doc.data()
           const orderAmount = Number(data.total_amount) || 0
           totalSales += orderAmount
 
-          // ✅ Handle Firestore Timestamp safely
           if (data.createdAt?.toDate) {
             const orderDate = data.createdAt.toDate()
             if (
               orderDate.getMonth() === currentMonth &&
               orderDate.getFullYear() === currentYear
             ) {
-              monthlyRevenue += orderAmount
+              monthlyTransactionRevenue += orderAmount
             }
           }
         })
+
+        // --- Stock Purchases ---
+        const stocksRef = collection(db, "users", user.uid, "stocks")
+        const stocksSnap = await getDocs(stocksRef)
+
+        let monthlyStockCost = 0
+
+        stocksSnap.forEach((doc) => {
+          const data = doc.data()
+          const stockTotal = Number(data.total) || 
+            (data.items?.reduce((sum: number, i: any) => sum + (i.subtotal || 0), 0) || 0)
+
+          if (data.createdAt?.toDate) {
+            const stockDate = data.createdAt.toDate()
+            if (
+              stockDate.getMonth() === currentMonth &&
+              stockDate.getFullYear() === currentYear
+            ) {
+              monthlyStockCost += stockTotal
+            }
+          }
+        })
+
+        // --- Final Monthly Revenue (Sales - Stock Purchases) ---
+        const monthlyRevenue = monthlyTransactionRevenue - monthlyStockCost
 
         setStats({
           totalSales,
