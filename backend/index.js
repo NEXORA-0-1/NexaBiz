@@ -45,6 +45,7 @@ app.post('/api/forecast', authenticate, [
   const serviceAccount = require('../serviceAccountKey.json');
   const { query } = req.body;
   const userId = req.user.uid;
+  console.log('Received query:', query, 'User ID:', userId); //debug
 
   try {
     // IR: Fetch stock data from products collection
@@ -80,6 +81,7 @@ app.post('/api/forecast', authenticate, [
 });
 
 app.listen(process.env.PORT || 3001, () => console.log(`Backend on port ${process.env.PORT || 3001}`));
+<<<<<<< HEAD
 
 
 
@@ -92,3 +94,5 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend on port ${PORT}`));
+=======
+>>>>>>> origin/main
