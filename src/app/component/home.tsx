@@ -110,15 +110,15 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Total Sales</h3>
-            <p className="text-2xl font-bold">Rs.{stats.totalSales.toLocaleString()}</p>
+            <p className="text-2xl font-bold">Rs.233</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Monthly Revenue</h3>
-            <p className="text-2xl font-bold">Rs.{stats.monthlyRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-bold">Rs.2323</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Orders</h3>
-            <p className="text-2xl font-bold">{stats.orders}</p>
+            <p className="text-2xl font-bold">23</p>
           </div>
         </div>
 
