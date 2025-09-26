@@ -26,13 +26,21 @@ def run_demand_predictor(query, stock_data, transaction_data):
 # ----------------------
 # Dummy agents
 # ----------------------
-def order_optimizer(query, stock_data, transaction_data):
-    return {
-        "readable_text": f"🛒 Order Optimizer (dummy) for: '{query}'",
-        "details": {
-            "suggested_order": "e.g., Buy 10 more units of Rice"
+def run_order_optimizer(query, stock_data, transaction_data):
+    try:
+        url = "http://127.0.0.1:5002/optimize_order"  # order_optimizer Flask endpoint
+        payload = {
+            "query": query,
+            "stock_data": stock_data,
+            "transaction_data": transaction_data
         }
-    }
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code != 200:
+            return {"error": f"order_optimizer returned {response.status_code}: {response.text}"}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Request to order_optimizer failed: {str(e)}"}
+
 
 def supply_checker(query, stock_data):
     return {
@@ -58,7 +66,7 @@ def ai_handler():
         if "predict" in query and "demand" in query:
             response = run_demand_predictor(query, stock_data, transaction_data)
         elif "optimize" in query or "order" in query:
-            response = order_optimizer(query, stock_data, transaction_data)
+            response = run_order_optimizer(query, stock_data, transaction_data)
         elif "supply" in query or "supplier" in query:
             response = supply_checker(query, stock_data)
         else:

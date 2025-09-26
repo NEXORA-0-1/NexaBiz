@@ -1,0 +1,15 @@
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5002
+ * Running on http://172.20.10.3:5002
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 103-495-767
+INFO:werkzeug:127.0.0.1 - - [26/Sep/2025 13:44:46] "POST /optimize_order HTTP/1.1" 200 -
+INFO:werkzeug: * Detected change in 'C:\\Users\\User\\OneDrive\\Desktop\\nexa aluth\\nexabiz-pos\\ai\\order_optimizer.py', reloading
+INFO:werkzeug: * Restarting with stat
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 103-495-767
+ERROR:root:Gemini API error: 404 Publisher Model `projects/generativelanguage-ga/locations/us-central1/publishers/google/models/gemini-1.5-flash-002` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+INFO:werkzeug:127.0.0.1 - - [26/Sep/2025 14:45:47] "POST /optimize_order HTTP/1.1" 200 -

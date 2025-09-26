@@ -17,7 +17,7 @@ interface UserData {
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'
+type Tab = 'home' | 'product' | 'inventory' | 'Orders' | 'setting'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -68,7 +68,7 @@ export default function UserDashboard() {
     { label: 'Home', tab: 'home' },
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
-    { label: 'Finance', tab: 'finance' },
+    { label: 'Orders', tab: 'Orders' },
     { label: 'Setting', tab: 'setting' },
   ]
 
@@ -93,7 +93,7 @@ export default function UserDashboard() {
           </div>
         )
 
-      case 'finance':
+      case 'Orders':
         return (
           <div>
             <h2 className="text-xl font-semibold mb-2">Finance</h2>
