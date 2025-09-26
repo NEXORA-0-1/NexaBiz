@@ -5,9 +5,10 @@ import { doc, getDoc } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Home from '../component/home' 
+import Home from '../component/home'
 import MyProductpage  from '../component/products/ProductPage'
 import MyInventorypage  from '../component/inventory/InventoryPage'
+import MySupplierPage from '../component/supplier/supplierPage'
 
 interface UserData {
   userId: string
@@ -17,7 +18,7 @@ interface UserData {
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'
+type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'| 'Supplier'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -69,6 +70,7 @@ export default function UserDashboard() {
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
     { label: 'Finance', tab: 'finance' },
+    {label: 'Supplier', tab: 'Supplier'},
     { label: 'Setting', tab: 'setting' },
   ]
 
@@ -107,6 +109,12 @@ export default function UserDashboard() {
             <p>This is the Setting page content.</p>
           </div>
         )
+      case 'Supplier':
+        return (
+          <div>
+            <MySupplierPage/>
+          </div>
+        )
       default:
         return null
     }
@@ -118,7 +126,7 @@ export default function UserDashboard() {
       <aside className="w-64 bg-gray-800 text-white p-6 flex flex-col">
         <h1 className="text-2xl font-bold mb-8">User Dashboard</h1>
 
-       
+
 
         {/* Navigation */}
         <nav className="flex flex-col space-y-3 flex-grow">
