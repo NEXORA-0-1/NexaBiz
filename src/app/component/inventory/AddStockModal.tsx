@@ -148,13 +148,9 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Add Stock</h2>
 
-        <input
-          type="text"
-          value={supplierName}
-          onChange={e => setSupplierName(e.target.value)}
-          placeholder="Supplier Name"
-          className="border px-3 py-2 rounded w-full mb-4"
-        />
+        <select className="border px-3 py-2 rounded w-full mb-4">
+          <option value="">Select Supplier</option>
+        </select>
 
         <table className="w-full border mb-3">
           <thead>
