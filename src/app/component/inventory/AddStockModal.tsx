@@ -11,6 +11,8 @@ import {
   serverTimestamp
 } from 'firebase/firestore'
 
+import supplierData from '@/src/data/supplierDummy.json'
+
 type Props = {
   onClose: () => void
   onSuccess: () => void
@@ -36,6 +38,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
   const [supplierName, setSupplierName] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<ItemRow[]>([])
+  const allSuppliers = supplierData as string[];
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -148,9 +151,20 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Add Stock</h2>
 
-        <select className="border px-3 py-2 rounded w-full mb-4">
+        <select
+          value={supplierName}
+          onChange={(e) => setSupplierName(e.target.value)}
+          className="border px-3 py-2 rounded w-full mb-4"
+          required
+        >
           <option value="">Select Supplier</option>
+          {allSuppliers.map(supplier => (
+            <option key={supplier} value={supplier}>
+              {supplier}
+            </option>
+          ))}
         </select>
+
 
         <table className="w-full border mb-3">
           <thead>
