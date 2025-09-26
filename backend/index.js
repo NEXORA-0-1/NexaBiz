@@ -68,7 +68,7 @@ app.post('/api/forecast', authenticate, [
     });
 
     // Call Python Agent
-    const agentResponse = await axios.post('http://127.0.0.1:5000/predict_demand', {
+    const agentResponse = await axios.post('http://127.0.0.1:5001/ai', {
       query,
       stock_data,
       transaction_data

@@ -28,7 +28,11 @@ export default function Login() {
           router.push('/adminDashboard')
         } else if (userData.approved === true) {
           router.push('/userDashboard')
-        } else {
+        }
+        else if (userData.role === 'supplier') {
+          router.push('/supplierDashboard')
+        }
+         else {
           router.push('/waiting')
         }
       } else {

@@ -14,9 +14,7 @@ gemini_api_key = os.getenv('GEMINI_API_KEY')
 if not gemini_api_key:
     raise ValueError("GEMINI_API_KEY not found in .env file")
 
-# Print a part of the key to verify it's loaded (for debugging only)
 print("Gemini API Key loaded:", gemini_api_key[:6], "…")
-# Configure Gemini API
 genai.configure(api_key=gemini_api_key)
 
 # Logging
@@ -100,27 +98,36 @@ def predict_demand():
         future_demand = max(0, future_demand)
 
         # Generate Gemini insight
-        prompt = f"Based on current stock {current_stock}, past sales {product_sales} for {product}, predict demand for {period}. Consider stock trends and keep it concise."
+        prompt = f"Based on current stock {current_stock}, past sales {product_sales} for {product}, predict demand for {period}. Keep it concise."
         try:
-            model_gemini = genai.GenerativeModel("gemini-1.5-flash")
+            model_gemini = genai.GenerativeModel("gemini-2.0-flash-001")
             response = model_gemini.generate_content(prompt)
             insight = response.text
         except Exception as e:
             logging.error(f"Gemini API error: {e}")
             insight = "Unable to generate insight due to API error."
 
-        logging.info(f"Query: {query}, Stock: {current_stock}, Sales: {product_sales}, Forecast: {future_demand}, Insight: {insight}")
-        if sales_ratio < 0.1 and product_sales > 0:
-            logging.warning(f"Potential bias: Low sales ratio {sales_ratio} for {product}")
+        # Create human-readable summary
+        readable_text = (
+            f"🌿 Nexabiz AI Forecast:\n"
+            f"For {product.title()} {period}, you currently have {current_stock} in stock.\n"
+            f"Last month you sold {product_sales} units.\n"
+            f"We predict you'll need {int(future_demand)} units.\n"
+            f"{insight}"
+        )
 
-        return jsonify({
+        # Log full JSON for debugging
+        logging.info({
             'product': product,
             'period': period,
-            'current_stock': int(current_stock),
-            'past_sales': int(product_sales),
+            'current_stock': current_stock,
+            'past_sales': product_sales,
             'forecast_demand': future_demand,
             'insight': insight
         })
+
+        # Return only readable text to frontend
+        return jsonify({'readable_text': readable_text})
 
     except Exception as e:
         logging.error(f"Error in predict_demand: {e}")
