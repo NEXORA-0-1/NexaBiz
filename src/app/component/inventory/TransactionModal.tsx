@@ -128,28 +128,34 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
     try {
       await runTransaction(db, async (tx) => {
-        // 1) Validate and deduct stock for each product
-        for (const item of mergedItems) {
-          const productRef = doc(db, 'users', user.uid, 'products', item.productId)
-          const productSnap = await tx.get(productRef)
+        const productRefs = mergedItems.map(item =>
+          doc(db, 'users', user.uid, 'products', item.productId)
+        )
 
-          if (!productSnap.exists()) {
-            throw new Error(`Product not found: ${item.product_name || item.pid}`)
+        // 1) READ all product docs first
+        const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)))
+
+        // 2) Validate stock
+        productSnaps.forEach((snap, idx) => {
+          if (!snap.exists()) {
+            throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
           }
-
-          const data = productSnap.data() as any
-          const currentQty = Number(data.qty || 0)
-
-          if (item.qty > currentQty) {
+          const currentQty = Number(snap.data()?.qty || 0)
+          if (mergedItems[idx].qty > currentQty) {
             throw new Error(
-              `Not enough stock for ${item.product_name}. Available: ${currentQty}, Requested: ${item.qty}`
+              `Not enough stock for ${mergedItems[idx].product_name}. Available: ${currentQty}, Requested: ${mergedItems[idx].qty}`
             )
           }
+        })
 
-          tx.update(productRef, { qty: currentQty - item.qty })
-        }
+        // 3) UPDATE all stocks
+        productSnaps.forEach((snap, idx) => {
+          const ref = productRefs[idx]
+          const currentQty = Number(snap.data()?.qty || 0)
+          tx.update(ref, { qty: currentQty - mergedItems[idx].qty })
+        })
 
-        // 2) Create transaction document (atomic with stock updates)
+        // 4) CREATE transaction doc
         const newTxRef = doc(userTransactionsRef)
         tx.set(newTxRef, {
           tid,

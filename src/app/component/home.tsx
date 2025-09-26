@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { auth, db } from "@/lib/firebase"
-import { collection, getDocs, Timestamp } from "firebase/firestore"
+import { auth } from "@/lib/firebase"
 
 interface UserData {
   userId: string
@@ -18,21 +17,25 @@ interface HomeProps {
   userData: UserData
 }
 
+interface Message {
+  content: string
+}
+
 const Home: React.FC<HomeProps> = ({ userData }) => {
   const [showProfile, setShowProfile] = useState(false)
   const [query, setQuery] = useState('')
-  const [result, setResult] = useState<any>(null)
-
-  // 🔹 Analytics state
-  const [stats, setStats] = useState({
-    totalSales: 0,
-    monthlyRevenue: 0,
-    orders: 0,
-  })
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isTyping, setIsTyping] = useState(false)
 
   const toggleProfile = () => setShowProfile(prev => !prev)
 
   const handleForecast = async () => {
+    if (!query.trim()) return
+    // Add user's query as a message
+    setMessages(prev => [...prev, { content: query }])
+    setQuery('')
+    setIsTyping(true)
+
     try {
       const idToken = await auth.currentUser?.getIdToken()
       console.log('Sending query:', query)
@@ -45,85 +48,22 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         body: JSON.stringify({ query })
       })
       const data = await response.json()
-      setResult(data)
+      console.log('Raw API response:', data)
+
+      // Extract readable text from API response
+      const botMessage = data?.readable_text || 'Sorry, I could not generate a response.'
+
+      // Add bot response with slight delay for interactivity
+      setTimeout(() => {
+        setMessages(prev => [...prev, { content: botMessage }])
+        setIsTyping(false)
+      }, 500)
     } catch (error) {
       console.error('Forecast error:', error)
-      setResult({ error: 'Failed to fetch forecast' })
+      setMessages(prev => [...prev, { content: 'Failed to fetch forecast' }])
+      setIsTyping(false)
     }
   }
-
-  // 🔹 Fetch analytics from Firestore
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const user = auth.currentUser
-        if (!user) return
-
-        const now = new Date()
-        const currentMonth = now.getMonth()
-        const currentYear = now.getFullYear()
-
-        // --- Transactions ---
-        const transactionsRef = collection(db, "users", user.uid, "transactions")
-        const transactionsSnap = await getDocs(transactionsRef)
-
-        let totalSales = 0
-        let monthlyTransactionRevenue = 0
-        let ordersCount = transactionsSnap.size
-
-        transactionsSnap.forEach((doc) => {
-          const data = doc.data()
-          const orderAmount = Number(data.total_amount) || 0
-          totalSales += orderAmount
-
-          if (data.createdAt?.toDate) {
-            const orderDate = data.createdAt.toDate()
-            if (
-              orderDate.getMonth() === currentMonth &&
-              orderDate.getFullYear() === currentYear
-            ) {
-              monthlyTransactionRevenue += orderAmount
-            }
-          }
-        })
-
-        // --- Stock Purchases ---
-        const stocksRef = collection(db, "users", user.uid, "stocks")
-        const stocksSnap = await getDocs(stocksRef)
-
-        let monthlyStockCost = 0
-
-        stocksSnap.forEach((doc) => {
-          const data = doc.data()
-          const stockTotal = Number(data.total) || 
-            (data.items?.reduce((sum: number, i: any) => sum + (i.subtotal || 0), 0) || 0)
-
-          if (data.createdAt?.toDate) {
-            const stockDate = data.createdAt.toDate()
-            if (
-              stockDate.getMonth() === currentMonth &&
-              stockDate.getFullYear() === currentYear
-            ) {
-              monthlyStockCost += stockTotal
-            }
-          }
-        })
-
-        // --- Final Monthly Revenue (Sales - Stock Purchases) ---
-        const monthlyRevenue = monthlyTransactionRevenue - monthlyStockCost
-
-        setStats({
-          totalSales,
-          monthlyRevenue,
-          orders: ordersCount,
-        })
-      } catch (err) {
-        console.error("Error fetching stats:", err)
-      }
-    }
-
-    fetchStats()
-  }, [])
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-blue-900 p-8">
@@ -182,30 +122,46 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           </div>
         </div>
 
-        {/* Demand Forecast Section */}
-        <div className="mt-6 p-6 bg-blue-50 rounded-xl shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Demand Forecast</h2>
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="e.g., Predict demand for green leaves next month"
-            className="border p-2 w-full mb-2 rounded"
-          />
-          <button
-            onClick={handleForecast}
-            className="bg-blue-600 text-white p-2 rounded"
-          >
-            Predict
-          </button>
-          {result && (
-            <div className="mt-4 p-4 bg-gray-100 rounded">
-              <h3>Result:</h3>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
-            </div>
-          )}
-        </div>
+        {/* Nexabiz AI Section */}
+        <div className="mt-6 p-6 bg-blue-50 rounded-xl shadow-md flex flex-col">
+          <h2 className="text-xl font-semibold mb-2">Nexabiz AI</h2>
 
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Ask me about product demand, orders, or stock"
+              className="border p-2 w-full rounded"
+              onKeyDown={e => e.key === 'Enter' && handleForecast()}
+            />
+            <button
+              onClick={handleForecast}
+              className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition"
+              title="Ask Nexabiz AI"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16h6M12 2a10 10 0 100 20 10 10 0 000-20z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Messages Display */}
+          <div className="mt-2 p-2 bg-gray-100 rounded max-h-80 overflow-y-auto flex flex-col space-y-2">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`bg-white p-2 rounded shadow-sm ${idx % 2 === 0 ? 'self-start' : 'self-end'}`}
+              >
+                {msg?.content ?? 'Invalid message'}
+              </div>
+            ))}
+            {isTyping && (
+              <div className="bg-white p-2 rounded shadow-sm italic">Nexabiz AI is typing...</div>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   )
