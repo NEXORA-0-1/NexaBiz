@@ -3,9 +3,31 @@ from flask_cors import CORS
 import statistics
 import logging
 import pandas as pd
+from dotenv import load_dotenv
+import os
+import google.generativeai as genai
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+# Load environment variables
+load_dotenv()
+gemini_api_key = os.getenv('GEMINI_API_KEY')
+if not gemini_api_key:
+    raise ValueError("GEMINI_API_KEY not found in .env file")
+genai.configure(api_key=gemini_api_key)
+
 
 # Logging
-logging.basicConfig(filename='supply_checker_logs.txt', level=logging.INFO)
+logging.basicConfig(filename='supply_checker_logs.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=60),
+    retry=retry_if_exception_type(Exception)
+)
+def generate_gemini_insight(prompt):
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
 app = Flask(__name__)
 CORS(app)
@@ -50,12 +72,21 @@ def supply_check():
         # Sort best to worst
         results = sorted(results, key=lambda x: x["score"], reverse=True)
 
+        # Generate Gemini insight
+        prompt = f"Based on these suppliers for {product_name}: {results[:3]}, recommend the best one with reasoning. Keep it concise (1-2 sentences)."
+        try:
+            insight = generate_gemini_insight(prompt)
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            insight = "Gemini is temporarily unavailable. Pure Mills is recommended based on quantity and price."
+
         # Generate readable text
         response_text = f"Supplier Information for {product_name}:\n"
         response_text += f"- Best Supplier: {results[0]['supplier']} (Avg Price: ${results[0]['avg_price']}, Total Delivered: {results[0]['total_qty']} units)\n"
         response_text += "- All Suppliers:\n"
         for sup in results:
             response_text += f"  - {sup['supplier']}: {sup['total_qty']} units, Avg Price: ${sup['avg_price']}\n"
+            response_text += f"- Insight: {insight}"
 
         logging.info(f"Supply Checker response: {response_text}")
         return jsonify({
