@@ -100,7 +100,7 @@ def predict_demand():
         # Generate Gemini insight
         prompt = f"Based on current stock {current_stock}, past sales {product_sales} for {product}, predict demand for {period}. Keep it concise."
         try:
-            model_gemini = genai.GenerativeModel("gemini-1.5-flash")
+            model_gemini = genai.GenerativeModel("gemini-2.0-flash-001")
             response = model_gemini.generate_content(prompt)
             insight = response.text
         except Exception as e:
