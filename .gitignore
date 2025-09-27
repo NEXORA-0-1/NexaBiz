@@ -51,8 +51,13 @@ __pycache__/
 /ai/*.log
 /ai/venv/
 /ai/demand_predictor_logs.txt
+/ai/order_optimizer_logs.txt
+/ai/order_generator_logs.txt
+/ai/firebaseKey.json
+
 
 # IDE/project files
 .idea/
 *.sublime-project
 *.sublime-workspace
+
