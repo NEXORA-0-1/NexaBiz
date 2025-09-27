@@ -8,6 +8,7 @@ const { body, validationResult } = require('express-validator');
 dotenv.config();
 
 const serviceAccount = require('./serviceAccountKey.json');
+const { data } = require('framer-motion/client');
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
@@ -38,14 +39,28 @@ app.post('/api/forecast', authenticate, [
   const userId = req.user.uid;
   console.log('Received query:', query, 'User ID:', userId); //debug
 
+
   try {
-    // IR: Fetch stock data from products collection
-    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
-    const stock_data = productsSnap.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-      qty: Number(doc.data().qty || 0)
-    }));
+    // IR: Fetch stock data
+    // Fetch stocks from Firestore (not products)
+    const stocksSnap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('stocks')
+      .get();
+
+   const stock_data = stocksSnap.docs.flatMap(doc => {
+      const stock = doc.data();
+      const supplierName = stock.supplierName || 'Unknown';
+      return (stock.items || []).map(item => ({
+        id: doc.id,
+        name: item.product_name,
+        qty: Number(item.qty || 0),
+        supplierName: supplierName,
+        purchase_price: Number(item.purchase_price || 0),
+        createdAt: stock.createdAt?.toDate().toISOString() || new Date().toISOString()
+      }));
+    });
 
     // IR: Fetch transaction data
     const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
@@ -64,9 +79,11 @@ app.post('/api/forecast', authenticate, [
       stock_data,
       transaction_data
     });
+    console.log("stock_data sent to Flask:", stock_data);
 
     res.json(agentResponse.data);
   } catch (error) {
+    console.error('AI agent error:', error.message); //debug
     res.status(500).json({ error: error.message });
   }
 });
