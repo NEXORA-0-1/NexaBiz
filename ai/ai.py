@@ -49,14 +49,20 @@ def order_optimizer(query, stock_data, transaction_data):
         }
     }
 
-def supply_checker(query, stock_data):
-    return {
-        "readable_text": f"📦 Supply Checker (dummy) for: '{query}'",
-        "details": {
-            "low_stock_items": [p['name'] for p in stock_data if p.get('qty', 0) < 5],
-            "available_suppliers": ["Supplier A", "Supplier B"]
+def supply_checker(query, stock_data, product_name=None):
+    try:
+        url = "http://127.0.0.1:5002/supply-check"  # supply_checker Flask endpoint
+        payload = {
+            "query": query,
+            "stock_data": stock_data,
+            "product_name": product_name
         }
-    }
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code != 200:
+            return {"error": f"supply_checker returned {response.status_code}: {response.text}"}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Request to supply_checker failed: {str(e)}"}
 
 # ----------------------
 # Universal Endpoint
@@ -76,8 +82,9 @@ def ai_handler():
             response = run_demand_predictor(query, stock_data, transaction_data)
         elif "optimize" in query_lower or "order" in query_lower:
             response = order_optimizer(query, stock_data, transaction_data)
-        elif "supply" in query_lower or "supplier" in query_lower:
-            response = supply_checker(query, stock_data)
+        elif "supply" in query or "supplier" in query:
+            product_name = query.split("for")[-1].strip() if "for" in query else None
+            response = supply_checker(query, stock_data, product_name)
         else:
             # Fallback to Gemini AI for general queries
             try:
