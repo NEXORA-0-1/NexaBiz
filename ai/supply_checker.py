@@ -25,7 +25,7 @@ logging.basicConfig(filename='supply_checker_logs.txt', level=logging.INFO, form
     retry=retry_if_exception_type(Exception)
 )
 def generate_gemini_insight(prompt):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.0-flash-001')
     response = model.generate_content(prompt)
     return response.text.strip()
 
