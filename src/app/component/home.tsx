@@ -1,7 +1,6 @@
-// components/Home.tsx
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { auth } from "@/lib/firebase"
@@ -39,6 +38,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
     try {
       const idToken = await auth.currentUser?.getIdToken()
+      console.log('Sending query:', query)
       const response = await fetch('http://localhost:3001/api/forecast', {
         method: 'POST',
         headers: {
@@ -110,15 +110,15 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Total Sales</h3>
-            <p className="text-2xl font-bold">$12,340</p>
+            <p className="text-2xl font-bold">Rs.233</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Monthly Revenue</h3>
-            <p className="text-2xl font-bold">$3,210</p>
+            <p className="text-2xl font-bold">Rs.2323</p>
           </div>
           <div className="p-6 bg-blue-100 rounded-xl shadow-md">
             <h3 className="text-lg font-semibold mb-2">Orders</h3>
-            <p className="text-2xl font-bold">201</p>
+            <p className="text-2xl font-bold">23</p>
           </div>
         </div>
 

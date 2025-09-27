@@ -7,6 +7,7 @@ import logging
 import os
 from dotenv import load_dotenv
 import numpy as np
+from rapidfuzz import process, fuzz  # <-- For fuzzy matching
 
 # Load environment variables
 load_dotenv()
@@ -33,6 +34,18 @@ app = Flask(__name__)
 def normalize_name(name: str) -> str:
     """Normalize product names for consistent comparison."""
     return name.strip().lower() if isinstance(name, str) else ""
+
+def fuzzy_match_product(product_norm, product_list, threshold=70):
+    """
+    Fuzzy match the input product name to the closest product in the list.
+    Returns the best match if above threshold, else None.
+    """
+    if not product_list:
+        return None
+    best_match = process.extractOne(product_norm, product_list, scorer=fuzz.WRatio)
+    if best_match and best_match[1] >= threshold:  # match[1] is the similarity score
+        return best_match[0]
+    return None
 
 @app.route('/predict_demand', methods=['POST'])
 def predict_demand():
@@ -70,10 +83,19 @@ def predict_demand():
         if not df_transactions.empty and 'product_name' in df_transactions.columns:
             df_transactions['product_name_norm'] = df_transactions['product_name'].apply(normalize_name)
 
-        # Validate product in stock
+        # Fuzzy match product if not found exactly
         if not df_stock.empty and product_norm not in df_stock['name_norm'].values:
-            logging.warning(f"Product {product} not found in stock_data")
-            return jsonify({'error': f'Product {product} not found in stock'}), 400
+            # Try to find closest match
+            product_norm_fuzzy = fuzzy_match_product(product_norm, df_stock['name_norm'].tolist())
+            if product_norm_fuzzy:
+                logging.info(f"Fuzzy matched '{product}' to '{product_norm_fuzzy}'")
+                product_norm = product_norm_fuzzy
+            else:
+                logging.warning(f"Product {product} not found in stock_data")
+                return jsonify({'error': f'Product {product} not found in stock'}), 400
+
+        # Get display name (corrected) for readable text
+        product_display = df_stock[df_stock['name_norm'] == product_norm]['name'].iloc[0]
 
         # Calculate values
         current_stock = int(
@@ -98,19 +120,19 @@ def predict_demand():
         future_demand = max(0, future_demand)
 
         # Generate Gemini insight
-        prompt = f"Based on current stock {current_stock}, past sales {product_sales} for {product}, predict demand for {period}. Keep it concise."
+        prompt = f"Based on current stock {current_stock}, past sales {product_sales} for {product_display}, predict demand for {period}. Keep it concise."
         try:
-            model_gemini = genai.GenerativeModel("gemini-1.5-flash")
+            model_gemini = genai.GenerativeModel("gemini-2.0-flash-001")
             response = model_gemini.generate_content(prompt)
             insight = response.text
         except Exception as e:
             logging.error(f"Gemini API error: {e}")
             insight = "Unable to generate insight due to API error."
 
-        # Create human-readable summary
+        # Create human-readable summary using corrected display name
         readable_text = (
             f"🌿 Nexabiz AI Forecast:\n"
-            f"For {product.title()} {period}, you currently have {current_stock} in stock.\n"
+            f"For {product_display} {period}, you currently have {current_stock} in stock.\n"
             f"Last month you sold {product_sales} units.\n"
             f"We predict you'll need {int(future_demand)} units.\n"
             f"{insight}"
@@ -118,7 +140,7 @@ def predict_demand():
 
         # Log full JSON for debugging
         logging.info({
-            'product': product,
+            'product': product_display,
             'period': period,
             'current_stock': current_stock,
             'past_sales': product_sales,
