@@ -5,10 +5,13 @@ import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 
+from flask_cors import CORS   # Allow frontend requests
+
 # ----------------------
 # Setup
 # ----------------------
 app = Flask(__name__)
+CORS(app)  # enable CORS for frontend
 logging.basicConfig(filename="order_optimizer_logs.txt", level=logging.INFO)
 
 # Load environment variables
@@ -27,7 +30,7 @@ def normalize_name(name: str) -> str:
     return name.strip().lower() if isinstance(name, str) else ""
 
 # ----------------------
-# Endpoint
+# Optimize Order Endpoint
 # ----------------------
 @app.route("/optimize_order", methods=["POST"])
 def optimize_order():
@@ -116,6 +119,11 @@ def optimize_order():
     except Exception as e:
         logging.error(f"Error in optimize_order: {e}")
         return jsonify({"error": str(e)}), 500
+
+# ----------------------
+# Generate Order from PDF Endpoint
+# ----------------------
+
 
 # ----------------------
 # Run

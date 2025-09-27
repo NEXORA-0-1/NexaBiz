@@ -25,19 +25,19 @@ const generateTransactionID = () => {
 }
 
 type Product = {
-  id: string        // Firestore document ID
-  pid: string       // Your product code field
+  id: string
+  pid: string
   name: string
   selling_price: number
-  qty: number       // Current stock in product doc
+  qty: number
 }
 
 type ItemRow = {
-  productId: string     // Firestore document ID (for updates)
-  pid: string           // Snapshot of product code
-  product_name: string  // Snapshot of name
-  selling_price: number // Snapshot of price
-  qty: number           // Quantity to sell
+  productId: string
+  pid: string
+  product_name: string
+  selling_price: number
+  qty: number
 }
 
 export default function AddTransactionModal({ onClose, onSuccess }: Props) {
@@ -64,6 +64,48 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     fetchProducts()
   }, [])
 
+  // -------------------- PDF Upload Handler --------------------
+  const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const res = await fetch("http://localhost:5003/generate_order_from_pdf", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+
+      if (data.error) return window.alert(`Error: ${data.error}`)
+
+      const pdfItems: ItemRow[] = data.order.products.map((p: any) => {
+        const matched = products.find(
+          pr => pr.name.toLowerCase() === p.name.toLowerCase()
+        )
+        return {
+          productId: matched?.id || "",
+          pid: matched?.pid || "",
+          product_name: p.name,
+          selling_price: matched?.selling_price || 0,
+          qty: p.qty
+        }
+      })
+
+      setItems(pdfItems)
+
+      if (data.order.supplier) setCusName(data.order.supplier)
+
+      window.alert("PDF parsed and items autofilled!")
+    } catch (err) {
+      console.error(err)
+      window.alert("Failed to parse PDF")
+    }
+  }
+  // -------------------------------------------------------------
+
   // Add a blank row
   const handleAddRow = () => {
     setItems(prev => [
@@ -72,7 +114,6 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     ])
   }
 
-  // When product is selected from dropdown
   const handleSelectProduct = (index: number, productId: string) => {
     const product = products.find(p => p.id === productId)
     if (!product) return
@@ -87,7 +128,6 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     setItems(updated)
   }
 
-  // Update quantity
   const handleQtyChange = (index: number, qtyStr: string) => {
     const qty = Math.max(1, Number(qtyStr || 0))
     const updated = [...items]
@@ -95,10 +135,8 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     setItems(updated)
   }
 
-  // Calculate totals
   const totalAmount = items.reduce((sum, i) => sum + i.qty * i.selling_price, 0)
 
-  // Save transaction (with stock checks + deductions)
   const handleSaveTransaction = async () => {
     const user = auth.currentUser
     if (!user) return window.alert('User not logged in')
@@ -106,7 +144,6 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     if (items.length === 0) return window.alert('Add at least one product')
     if (items.some(i => !i.productId)) return window.alert('Please select a product on all rows')
 
-    // Merge duplicate rows by productId
     const mergedMap = new Map<string, ItemRow>()
     for (const i of items) {
       const key = i.productId
@@ -132,14 +169,10 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
           doc(db, 'users', user.uid, 'products', item.productId)
         )
 
-        // 1) READ all product docs first
         const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)))
 
-        // 2) Validate stock
         productSnaps.forEach((snap, idx) => {
-          if (!snap.exists()) {
-            throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
-          }
+          if (!snap.exists()) throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
           const currentQty = Number(snap.data()?.qty || 0)
           if (mergedItems[idx].qty > currentQty) {
             throw new Error(
@@ -148,14 +181,12 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
           }
         })
 
-        // 3) UPDATE all stocks
         productSnaps.forEach((snap, idx) => {
           const ref = productRefs[idx]
           const currentQty = Number(snap.data()?.qty || 0)
           tx.update(ref, { qty: currentQty - mergedItems[idx].qty })
         })
 
-        // 4) CREATE transaction doc
         const newTxRef = doc(userTransactionsRef)
         tx.set(newTxRef, {
           tid,
@@ -193,6 +224,17 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
           placeholder="Customer Name"
           className="border px-3 py-2 rounded w-full mb-4"
         />
+
+        {/* ---------- PDF Upload Input ---------- */}
+        <div className="mb-3">
+          <label className="block mb-1 font-medium">Upload PDF Order</label>
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handlePDFUpload}
+            className="border px-2 py-1 rounded w-full"
+          />
+        </div>
 
         {/* Items Table */}
         <table className="w-full border mb-3">

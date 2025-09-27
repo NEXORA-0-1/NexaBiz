@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import Home from '../component/home' 
 import MyProductpage  from '../component/products/ProductPage'
 import MyInventorypage  from '../component/inventory/InventoryPage'
+import MyOrderPage  from '../component/orders/OrderPage'
 
 interface UserData {
   userId: string
@@ -96,8 +97,7 @@ export default function UserDashboard() {
       case 'Orders':
         return (
           <div>
-            <h2 className="text-xl font-semibold mb-2">Finance</h2>
-            <p>This is the Finance page content.</p>
+            <MyOrderPage />
           </div>
         )
       case 'setting':
