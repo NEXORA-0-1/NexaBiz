@@ -50,7 +50,16 @@ def supply_check():
         # Sort best to worst
         results = sorted(results, key=lambda x: x["score"], reverse=True)
 
+        # Generate readable text
+        response_text = f"Supplier Information for {product_name}:\n"
+        response_text += f"- Best Supplier: {results[0]['supplier']} (Avg Price: ${results[0]['avg_price']}, Total Delivered: {results[0]['total_qty']} units)\n"
+        response_text += "- All Suppliers:\n"
+        for sup in results:
+            response_text += f"  - {sup['supplier']}: {sup['total_qty']} units, Avg Price: ${sup['avg_price']}\n"
+
+        logging.info(f"Supply Checker response: {response_text}")
         return jsonify({
+            "readable_text": response_text,
             "query": query,
             "product_name": product_name,
             "best_supplier": results[0],
