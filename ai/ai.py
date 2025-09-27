@@ -43,7 +43,7 @@ def run_demand_predictor(query, stock_data, transaction_data):
 # ----------------------
 def run_order_optimizer(query, stock_data, transaction_data):
     try:
-        url = "http://127.0.0.1:5002/optimize_order"  # order_optimizer Flask endpoint
+        url = "http://127.0.0.1:5003/optimize_order"  # order_optimizer Flask endpoint
         payload = {
             "query": query,
             "stock_data": stock_data,

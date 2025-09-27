@@ -76,11 +76,13 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     formData.append("user_id", user.uid) // send user ID to backend
 
     try {
-      const res = await fetch("http://localhost:5003/generate_order_from_pdf", {
+      const res = await fetch("http://localhost:5004/generate_order_from_pdf", {
         method: "POST",
         body: formData,
       })
       const data = await res.json()
+
+      console.log("PDF PARSE RESPONSE:", data) 
 
       if (data.error) return window.alert(`Error: ${data.error}`)
 

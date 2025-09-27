@@ -86,7 +86,7 @@ def optimize_order():
         )
 
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-2.0-flash-001")
             response = model.generate_content(prompt)
             insight = response.text
         except Exception as e:
@@ -129,4 +129,4 @@ def optimize_order():
 # Run
 # ----------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=5003, debug=True)

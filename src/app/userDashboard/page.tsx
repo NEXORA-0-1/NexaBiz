@@ -71,6 +71,7 @@ export default function UserDashboard() {
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
     { label: 'Orders', tab: 'Orders' },
+    { label: 'Supplier', tab: 'Supplier' },
     { label: 'Setting', tab: 'setting' },
   ]
 
