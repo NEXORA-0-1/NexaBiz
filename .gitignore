@@ -53,6 +53,7 @@ __pycache__/
 /ai/demand_predictor_logs.txt
 /ai/order_optimizer_logs.txt
 /ai/order_generator_logs.txt
+/ai/firebaseKey.json
 
 
 # IDE/project files

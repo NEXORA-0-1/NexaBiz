@@ -4,7 +4,6 @@ import { auth, db } from '@/lib/firebase'
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   runTransaction
 } from 'firebase/firestore'
@@ -69,8 +68,12 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const user = auth.currentUser
+    if (!user) return window.alert("User not logged in")
+
     const formData = new FormData()
     formData.append("file", file)
+    formData.append("user_id", user.uid) // send user ID to backend
 
     try {
       const res = await fetch("http://localhost:5003/generate_order_from_pdf", {
@@ -81,12 +84,13 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
       if (data.error) return window.alert(`Error: ${data.error}`)
 
+      // Map PDF items to Firestore products
       const pdfItems: ItemRow[] = data.order.products.map((p: any) => {
         const matched = products.find(
           pr => pr.name.toLowerCase() === p.name.toLowerCase()
         )
         return {
-          productId: matched?.id || "",
+          productId: matched?.id || "",      // matched Firestore productId
           pid: matched?.pid || "",
           product_name: p.name,
           selling_price: matched?.selling_price || 0,
