@@ -9,6 +9,7 @@ import Home from '../component/home'
 import MyProductpage  from '../component/products/ProductPage'
 import MyInventorypage  from '../component/inventory/InventoryPage'
 import MySupplierPage from '../component/supplier/supplierPage'
+import MyOrderPage  from '../component/orders/OrderPage'
 
 interface UserData {
   userId: string
@@ -18,7 +19,7 @@ interface UserData {
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'| 'Supplier'
+type Tab = 'home' | 'product' | 'inventory' | 'Orders' | 'setting'| 'Supplier'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -69,8 +70,7 @@ export default function UserDashboard() {
     { label: 'Home', tab: 'home' },
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
-    { label: 'Finance', tab: 'finance' },
-    {label: 'Supplier', tab: 'Supplier'},
+    { label: 'Orders', tab: 'Orders' },
     { label: 'Setting', tab: 'setting' },
   ]
 
@@ -95,11 +95,10 @@ export default function UserDashboard() {
           </div>
         )
 
-      case 'finance':
+      case 'Orders':
         return (
           <div>
-            <h2 className="text-xl font-semibold mb-2">Finance</h2>
-            <p>This is the Finance page content.</p>
+            <MyOrderPage />
           </div>
         )
       case 'setting':
