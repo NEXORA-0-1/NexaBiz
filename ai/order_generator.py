@@ -22,7 +22,10 @@ db = firestore.client()
 # Helper functions
 def normalize_line(line: str) -> str:
     """Normalize dash types and trim spaces."""
-    return line.replace("–", "-").replace("—", "-").strip()
+    line = line.replace("–", "-").replace("—", "-")
+    line = re.sub(r"-{2,}", "-", line)  # collapse --- or ---- into a single -
+    return line.strip()
+
 
 def fetch_products_from_firestore(user_id: str):
     """Fetch product names from Firestore for the current user."""
