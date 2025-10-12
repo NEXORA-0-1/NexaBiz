@@ -79,7 +79,7 @@ app.post('/api/forecast', authenticate, [
       stock_data,
       transaction_data
     });
-    console.log("stock_data sent to Flask:", stock_data);
+    //console.log("stock_data sent to Flask:", stock_data);
 
     res.json(agentResponse.data);
   } catch (error) {
