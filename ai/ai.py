@@ -1,16 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from bs4 import BeautifulSoup
-from serpapi import GoogleSearch
-from dotenv import load_dotenv
-import os
-import time
 import requests
-
-load_dotenv()  # Load environment variables from .env file
-serpapi_key = os.getenv("SERPAPI_API_KEY")
-if not serpapi_key:
-    raise ValueError("SERPAPI_API_KEY not found in environment variables.")
+from supplier_service import get_web_suppliers, format_suppliers
 
 app = Flask(__name__)
 CORS(app)
@@ -59,35 +50,6 @@ def supply_checker(query, stock_data, product_name=None):
     except requests.exceptions.RequestException as e:
         return {"error": f"Request to supply_checker failed: {str(e)}"}
 
-# ----------------------
-# DuckDuckGo Web-Scraping Supplier Search
-# ----------------------
-def get_ddg_suppliers(product_name):
-    try:
-        params = {
-            "q": f"{product_name} suppliers near me",
-            "api_key": serpapi_key,
-            "num": 5
-        }
-        search = GoogleSearch(params)
-        results = search.get_dict()
-
-        suppliers = []
-        if 'organic_results' in results:
-            for result in results['organic_results']:
-                suppliers.append({
-                    "name": result.get('title', 'Unknown Supplier'),
-                    "url": result.get('link', ''),
-                    "details": result.get('snippet', ''),
-                    "rating": result.get('rating', 'N/A')  # If available
-                })
-
-        # Rate limit (1 req/sec)
-        time.sleep(1)
-        return suppliers
-    except requests.exceptions.RequestException as e:
-        print("serpAPI error:", e)
-        return [{"name": "Error fetching suppliers", "url": "", "details": str(e)}]
 
 # ----------------------
 # Universal Endpoint
@@ -117,13 +79,22 @@ def ai_handler():
                      .replace("best supplier for", "")
                      .strip()
             )
-            print("🧩 Extracted product name:", product_name)
-            suppliers = get_ddg_suppliers(product_name)
-            response_text = f"Top suppliers for '{product_name}':\n"
-            for sup in suppliers:
-                response_text += f"- {sup['name']}: {sup['details']}\nLink: {sup['url']}\n"
+            print("Extracted product name:", product_name)
+            suppliers = get_web_suppliers(product_name)
+            formatted_suppliers = format_suppliers(suppliers)
+            #response_text = format_supplier_html(product_name, formatted_suppliers)
 
-            response = {"readable_text": response_text, "suppliers": suppliers}
+            response_text = f"Top suppliers for '{product_name}':\n"
+            for sup in formatted_suppliers:  # Use formatted_suppliers instead
+                response_text += (
+                    f"- Company: {sup['companyName']}\n"
+                    f"  Contact: {sup['contact']}\n"
+                    f"  Email: {sup['email']}\n"
+                    f"  Description: {sup['description']}\n"
+                    f"  Website: {sup['website']}\n\n"
+                )
+
+            response = {"readable_text": response_text, "suppliers": formatted_suppliers}
 
         elif "supply" in query:
             # Handle supply checks separately, only when not "best supplier"
