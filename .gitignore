@@ -63,3 +63,11 @@ ai/order_optimizer_logs.txt
 
 # Ignore all datasets
 ai/datasets/
+
+# Ignore serialized/binary model or data files
+*.pkl
+
+# Ignore Jupyter checkpoint files
+ai/.ipynb_checkpoints/
+
+ai/firebaseKey.json
