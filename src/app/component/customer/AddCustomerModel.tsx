@@ -77,13 +77,17 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
           className="border px-3 py-2 rounded w-full mb-3"
         />
 
-        <input
-          type="text"
-          value={businessType}
-          onChange={e => setBusinessType(e.target.value)}
-          placeholder="Business Type (e.g., Retail, Wholesale)"
-          className="border px-3 py-2 rounded w-full mb-3"
-        />
+        <select
+        value={businessType}
+        onChange={e => setBusinessType(e.target.value)}
+        className="border px-3 py-2 rounded w-full mb-3"
+        >
+            <option value="">Select Business Type</option>
+            <option value="OnlineDistributor">Online Distributor</option>
+            <option value="RetailChain">Retail Chain</option>
+            <option value="ExportAgent">Export Agent</option>
+            <option value="Boutique">Boutique</option>
+        </select>
 
         <input
           type="text"
