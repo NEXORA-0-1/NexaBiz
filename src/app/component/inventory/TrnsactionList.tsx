@@ -5,19 +5,23 @@ import { auth, db } from '@/lib/firebase'
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
 import { FaTrash } from 'react-icons/fa'
 
+type TransactionItem = {
+  pid: string
+  product_name: string
+  selling_price: number
+  qty: number
+  discount?: number // optional
+  subtotal: number
+  discounted_subtotal?: number
+}
+
 type Transaction = {
   id: string
   tid: string
   cus_name: string
   total_amount: number
   createdAt: any
-  items: {
-    pid: string
-    product_name: string
-    selling_price: number
-    qty: number
-    subtotal: number
-  }[]
+  items: TransactionItem[]
 }
 
 export default function TransactionList() {
@@ -74,13 +78,15 @@ export default function TransactionList() {
                 <div>
                   <h3 className="text-lg font-semibold">{tx.cus_name}</h3>
                   <p className="text-sm text-gray-600">
-                    {tx.tid} — Rs. {tx.total_amount?.toFixed(2)}
-                  </p>
-                </div>
-                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                  {tx.createdAt?.toDate
+                    {tx.tid} 
+                    <br></br>
+                    {tx.createdAt?.toDate
                     ? new Date(tx.createdAt.toDate()).toLocaleString()
                     : 'N/A'}
+                  </p>
+                </div>
+                <span className="text-lg font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                  ${tx.total_amount?.toFixed(2)}
                 </span>
               </div>
 
@@ -88,19 +94,33 @@ export default function TransactionList() {
               {expandedId === tx.id && (
                 <div className="mt-4 border-t pt-4">
                   <h4 className="font-semibold mb-2">Purchased Items</h4>
-                  <div className="space-y-2">
-                    {tx.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between border p-2 rounded bg-gray-50"
-                      >
-                        <span>{item.product_name}</span>
-                        <span>
-                          {item.qty} × Rs.{item.selling_price.toFixed(2)} ={' '}
-                          <strong>Rs.{item.subtotal.toFixed(2)}</strong>
-                        </span>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-2 border">Product</th>
+                          <th className="p-2 border">Price</th>
+                          <th className="p-2 border">Qty</th>
+                          <th className="p-2 border">Discount (%)</th>
+                          <th className="p-2 border">Subtotal</th>
+                          <th className="p-2 border">Discounted Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tx.items.map((item, idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="p-2">{item.product_name}</td>
+                            <td className="p-2 text-right">{item.selling_price.toFixed(2)}</td>
+                            <td className="p-2 text-right">{item.qty}</td>
+                            <td className="p-2 text-right">{item.discount ?? 0}%</td>
+                            <td className="p-2 text-right">{item.subtotal.toFixed(2)}</td>
+                            <td className="p-2 text-right">
+                              {(item.discounted_subtotal ?? item.subtotal).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
 
                   <div className="flex justify-end gap-3 mt-4">
