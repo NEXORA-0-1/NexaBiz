@@ -25,11 +25,11 @@ const generateTransactionID = () => {
 }
 
 type Product = {
-  id: string        // Firestore document ID
-  pid: string       // Your product code field
+  id: string
+  pid: string
   name: string
   selling_price: number
-  qty: number       // Current stock in product doc
+  qty: number
 }
 
 type ItemRow = {
@@ -44,6 +44,8 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
   const [cus_name, setCusName] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<ItemRow[]>([])
+  const [customers, setCustomers] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Load available products from Firestore
   useEffect(() => {
@@ -53,15 +55,23 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
       const snap = await getDocs(collection(db, 'users', user.uid, 'products'))
       const productList: Product[] = snap.docs.map(d => ({
-        id: d.id,
-        pid: d.data().pid,
-        name: d.data().name,
-        selling_price: Number(d.data().selling_price || 0),
-        qty: Number(d.data().qty || 0),
+        id: d.id, // Firestore document ID
+        pid: d.data().product_id || "",             
+        name: d.data().product_name || "",              
+        selling_price: Number(d.data().suggested_price_usd || 0), 
+        qty: Number(d.data().stock_amount || 0),
       }))
       setProducts(productList)
     }
     fetchProducts()
+
+    const fetchCustomers = async () => {
+      const user = auth.currentUser
+      if (!user) return
+      const snap = await getDocs(collection(db, 'users', user.uid, 'customers'))
+      setCustomers(snap.docs.map(d => d.data().customer_name))
+    }
+    fetchCustomers()
   }, [])
 
   // Add a blank row
@@ -186,13 +196,39 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Add Transaction</h2>
 
-        <input
-          type="text"
-          value={cus_name}
-          onChange={e => setCusName(e.target.value)}
-          placeholder="Customer Name"
-          className="border px-3 py-2 rounded w-full mb-4"
-        />
+        <div className="relative mb-4">
+          <input
+            type="text"
+            value={cus_name}
+            onChange={e => {
+              setCusName(e.target.value)
+              setShowSuggestions(true)
+            }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // delay so click registers
+            placeholder="Customer Name"
+            className="border px-3 py-2 rounded w-full"
+          />
+
+          {showSuggestions && cus_name.trim() !== '' && (
+            <ul className="absolute z-10 bg-white border w-full rounded shadow max-h-40 overflow-y-auto">
+              {customers
+                .filter(name => name.toLowerCase().includes(cus_name.toLowerCase()))
+                .slice(0, 10)
+                .map((name, idx) => (
+                  <li
+                    key={idx}
+                    onClick={() => {
+                      setCusName(name)
+                      setShowSuggestions(false)
+                    }}
+                    className="px-3 py-2 hover:bg-gray-200 cursor-pointer"
+                  >
+                    {name}
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
 
         {/* Items Table */}
         <table className="w-full border mb-3">
