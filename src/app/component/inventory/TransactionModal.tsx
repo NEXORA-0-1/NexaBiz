@@ -47,6 +47,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
   const [items, setItems] = useState<ItemRow[]>([])
   const [customers, setCustomers] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [createdAt, setCreatedAt] = useState<string>('')
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -181,7 +182,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
             discounted_subtotal: discountedSubtotal(i)
           })),
           total_amount: mergedTotal,
-          createdAt: new Date()
+          createdAt: createdAt ? new Date(createdAt) : new Date() 
         })
       })
 
@@ -198,40 +199,50 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Add Transaction</h2>
+        <div className="relative mb-4 flex gap-2">
+          <div className="flex-3 relative w-3/4">
+            <input
+              type="text"
+              value={cus_name}
+              onChange={e => {
+                setCusName(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Customer Name"
+              className="border px-3 py-2 rounded w-full"
+            />
 
-        <div className="relative mb-4">
-          <input
-            type="text"
-            value={cus_name}
-            onChange={e => {
-              setCusName(e.target.value)
-              setShowSuggestions(true)
-            }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder="Customer Name"
-            className="border px-3 py-2 rounded w-full"
-          />
-
-          {showSuggestions && cus_name.trim() !== '' && (
-            <ul className="absolute z-10 bg-white border w-full rounded shadow max-h-40 overflow-y-auto">
-              {customers
-                .filter(name => name.toLowerCase().includes(cus_name.toLowerCase()))
-                .slice(0, 10)
-                .map((name, idx) => (
-                  <li
-                    key={idx}
-                    onClick={() => {
-                      setCusName(name)
-                      setShowSuggestions(false)
-                    }}
-                    className="px-3 py-2 hover:bg-gray-200 cursor-pointer"
-                  >
-                    {name}
-                  </li>
-                ))}
-            </ul>
-          )}
+            {showSuggestions && cus_name.trim() !== '' && (
+              <ul className="absolute z-10 bg-white border w-full rounded shadow max-h-40 overflow-y-auto">
+                {customers
+                  .filter(name => name.toLowerCase().includes(cus_name.toLowerCase()))
+                  .slice(0, 10)
+                  .map((name, idx) => (
+                    <li
+                      key={idx}
+                      onClick={() => {
+                        setCusName(name)
+                        setShowSuggestions(false)
+                      }}
+                      className="px-3 py-2 hover:bg-gray-200 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+          <div className="flex-1 w-1/4">
+            <input
+              type="datetime-local"
+              value={createdAt ? createdAt : ''}
+              onChange={e => setCreatedAt(e.target.value)}
+              className="border px-3 py-2 rounded w-full"
+            />
+          </div>
         </div>
+        
 
         {/* Items Table */}
         <table className="w-full border mb-3">
