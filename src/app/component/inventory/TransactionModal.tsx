@@ -153,7 +153,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
         productSnaps.forEach((snap, idx) => {
           if (!snap.exists()) throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
-          const currentQty = Number(snap.data()?.qty || 0)
+          const currentQty = Number(snap.data()?.stock_amount || 0)
           if (mergedItems[idx].qty > currentQty) {
             throw new Error(
               `Not enough stock for ${mergedItems[idx].product_name}. Available: ${currentQty}, Requested: ${mergedItems[idx].qty}`
@@ -163,8 +163,8 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
         productSnaps.forEach((snap, idx) => {
           const ref = productRefs[idx]
-          const currentQty = Number(snap.data()?.qty || 0)
-          tx.update(ref, { qty: currentQty - mergedItems[idx].qty })
+          const currentQty = Number(snap.data()?.stock_amount || 0)
+          tx.update(ref, { stock_amount: currentQty - mergedItems[idx].qty })
         })
 
         const newTxRef = doc(userTransactionsRef)
