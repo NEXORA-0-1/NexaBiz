@@ -90,18 +90,30 @@ def predict_demand():
             df_transactions['product_name_norm'] = df_transactions['product_name'].apply(normalize_name)
 
         # Fuzzy match if needed
-        if not df_stock.empty and product_norm not in df_stock['product_name_norm'].values:
-            product_norm_fuzzy = fuzzy_match_product(product_norm, df_stock['product_name_norm'].tolist())
-            if product_norm_fuzzy:
-                product_norm = product_norm_fuzzy
+        matched_product_name = None
+        if not df_stock.empty:
+            # Check exact match first
+            if product_norm in df_stock['product_name_norm'].values:
+                matched_product_name = df_stock[df_stock['product_name_norm'] == product_norm]['product_name'].iloc[0]
             else:
-                return jsonify({'error': f'Product {product} not found in stock'}), 400
+                # Fuzzy match
+                product_norm_fuzzy = fuzzy_match_product(product_norm, df_stock['product_name_norm'].tolist())
+                if product_norm_fuzzy:
+                    matched_product_name = df_stock[df_stock['product_name_norm'] == product_norm_fuzzy]['product_name'].iloc[0]
+                else:
+                    return jsonify({'error': f'Product {product} not found in stock'}), 400
+
 
         # Extract current stock
-        current_stock = int(df_stock[df_stock['product_name_norm'] == product_norm]['qty'].iloc[0]) if product_norm in df_stock['product_name_norm'].values else 0
+        if matched_product_name:
+            matched_norm = normalize_name(matched_product_name)
+            current_stock = int(df_stock[df_stock['product_name_norm'] == matched_norm]['qty'].iloc[0])
+        else:
+            current_stock = 0
+
 
         # Aggregate past sales
-        product_sales = int(df_transactions[df_transactions['product_name_norm'] == product_norm]['qty'].sum()) if not df_transactions.empty else 0
+        product_sales = int(df_transactions[df_transactions['product_name_norm'] == matched_norm]['qty'].sum())
         total_sales = int(df_transactions['qty'].sum()) if not df_transactions.empty else 1
         sales_ratio = product_sales / total_sales
 
@@ -115,7 +127,7 @@ def predict_demand():
         # Align columns with training
         X_new = pd.get_dummies(X_new)
         X_new = X_new.reindex(columns=model_columns, fill_value=0)
-        
+
         # Debug Logging – Confirm Model + Inputs
         logging.info(f"Using model type: {type(model)}")
         logging.info(f"Model input features: {X_new.to_dict(orient='records')}")
@@ -138,7 +150,7 @@ def predict_demand():
         # Return summary
         readable_text = (
             f"🌿 Nexabiz AI Forecast:\n"
-            f"For {product} {period}, you currently have {current_stock} in stock.\n"
+            f"For {matched_product_name} {period}, you currently have {current_stock} in stock.\n"
             f"Last month you sold {product_sales} units.\n"
             f"We predict you'll need {future_demand} units.\n"
             f"{insight}"
