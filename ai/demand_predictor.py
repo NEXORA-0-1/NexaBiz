@@ -115,6 +115,12 @@ def predict_demand():
         # Align columns with training
         X_new = pd.get_dummies(X_new)
         X_new = X_new.reindex(columns=model_columns, fill_value=0)
+        
+        # Debug Logging – Confirm Model + Inputs
+        logging.info(f"Using model type: {type(model)}")
+        logging.info(f"Model input features: {X_new.to_dict(orient='records')}")
+        future_demand_raw = model.predict(X_new)[0]
+        logging.info(f"Raw model prediction output: {future_demand_raw}")
 
         # Predict demand
         future_demand = int(max(0, model.predict(X_new)[0]))
