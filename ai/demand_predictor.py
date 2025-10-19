@@ -118,15 +118,64 @@ def predict_demand():
         sales_ratio = product_sales / total_sales
 
         # Prepare features for model
-        X_new = pd.DataFrame([{
-            'current_stock': current_stock,
-            'product_sales_ratio': sales_ratio,
-            # You can add external features here later
-        }])
+        # ------------------ Prepare features for model dynamically ------------------
 
-        # Align columns with training
-        X_new = pd.get_dummies(X_new)
-        X_new = X_new.reindex(columns=model_columns, fill_value=0)
+        # Start with zeros for all columns
+        X_new = pd.DataFrame([{col: 0 for col in model_columns}])
+
+        # Map numeric values
+        if matched_norm:
+            # Price per unit
+            if 'price' in df_stock.columns:
+                X_new.at[0, 'price_per_unit_usd'] = float(df_stock[df_stock['product_name_norm'] == matched_norm]['price'].iloc[0])
+            elif 'price' in df_transactions.columns:
+                X_new.at[0, 'price_per_unit_usd'] = float(df_transactions[df_transactions['product_name_norm'] == matched_norm]['price'].mean())
+
+            # Discount percent
+            if 'discount_percent' in df_transactions.columns:
+                X_new.at[0, 'discount_percent'] = float(df_transactions[df_transactions['product_name_norm'] == matched_norm]['discount_percent'].mean())
+
+            # Current stock as a proxy for inventory-related features
+            X_new.at[0, 'base_cost_usd'] = current_stock  # example if used in model
+            X_new.at[0, 'suggested_price_usd'] = current_stock  # placeholder; adjust if you have real data
+
+        # Add temporal features
+        from datetime import datetime
+        now = datetime.now()
+        X_new.at[0, 'month'] = now.month
+        X_new.at[0, 'year'] = now.year
+        X_new.at[0, 'day_of_week'] = now.weekday()
+
+        # Infer category from stock_data or query
+        categories = ['Dress/Blouse','Formal Shirt','Jacket/Hoodie','Jeans','T-Shirt']
+        for cat in categories:
+            if cat.lower() in query.lower():
+                X_new.at[0, f'category_{cat}'] = 1
+
+        # Infer material type
+        materials = ['Cotton','Denim','Linen','Polyester','Silk']
+        for mat in materials:
+            if mat.lower() in query.lower():
+                X_new.at[0, f'material_type_{mat}'] = 1
+
+        # Match product_id dynamically
+        for pid_col in [c for c in model_columns if c.startswith('product_id_')]:
+            pid = pid_col.replace('product_id_','')
+            if matched_norm.lower().endswith(pid.lower()):  # simplistic mapping; adjust as needed
+                X_new.at[0, pid_col] = 1
+
+        # Optionally map business_type or location if provided in data
+        if 'business_type' in data:
+            bt_col = f"business_type_{data['business_type']}"
+            if bt_col in model_columns:
+                X_new.at[0, bt_col] = 1
+        if 'location' in data:
+            loc_col = f"location_{data['location']}"
+            if loc_col in model_columns:
+                X_new.at[0, loc_col] = 1
+
+        logging.info(f"Aligned features for model: {X_new.to_dict(orient='records')}")
+
 
         # Debug Logging – Confirm Model + Inputs
         logging.info(f"Using model type: {type(model)}")
