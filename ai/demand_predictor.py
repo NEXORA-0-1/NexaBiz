@@ -174,8 +174,12 @@ def predict_demand():
             if loc_col in model_columns:
                 X_new.at[0, loc_col] = 1
 
-        logging.info(f"Aligned features for model: {X_new.to_dict(orient='records')}")
+        feature_values = X_new.to_dict(orient='records')[0]
 
+        logging.info("----- MODEL INPUT FEATURES START -----")
+        for feature, value in feature_values.items():
+            logging.info(f"{feature}: {value}")
+        logging.info("----- MODEL INPUT FEATURES END -----")
 
         # Debug Logging – Confirm Model + Inputs
         logging.info(f"Using model type: {type(model)}")
