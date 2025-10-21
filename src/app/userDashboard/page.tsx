@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation'
 import Home from '../component/home'
 import MyProductpage  from '../component/products/ProductPage'
 import MyInventorypage  from '../component/inventory/InventoryPage'
-import MyOrderPage  from '../component/orders/OrderPage'
+import MySupplierPage from '../component/supplier/supplierPage'
+import MyCustomerPage from '../component/customer/CustomerPage'
 
 interface UserData {
   userId: string
@@ -18,7 +19,7 @@ interface UserData {
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'inventory' | 'Orders' | 'setting'
+type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'customer'| 'setting'| 'Supplier'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -69,8 +70,10 @@ export default function UserDashboard() {
     { label: 'Home', tab: 'home' },
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
-    { label: 'Orders', tab: 'Orders' },
-    { label: 'Setting', tab: 'setting' },
+    { label: 'Finance', tab: 'finance' },
+    {label: 'Customers', tab: 'customer'},
+    {label: 'Suppliers', tab: 'Supplier'},
+    { label: 'Settings', tab: 'setting' },
   ]
 
   // Content for each tab
@@ -94,12 +97,21 @@ export default function UserDashboard() {
           </div>
         )
 
-      case 'Orders':
+      case 'finance':
         return (
           <div>
-            <MyOrderPage />
+            <h2 className="text-xl font-semibold mb-2">Finance</h2>
+            <p>This is the Finance page content.</p>
           </div>
         )
+
+       case 'customer':
+        return (
+          <div>
+            <MyCustomerPage/>
+          </div>
+        )
+
       case 'setting':
         return (
           <div>
