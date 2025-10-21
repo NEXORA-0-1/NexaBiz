@@ -4,7 +4,6 @@ import { auth, db } from '@/lib/firebase'
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   runTransaction
 } from 'firebase/firestore'
@@ -25,27 +24,30 @@ const generateTransactionID = () => {
 }
 
 type Product = {
-  id: string        // Firestore document ID
-  pid: string       // Your product code field
+  id: string
+  pid: string
   name: string
   selling_price: number
-  qty: number       // Current stock in product doc
+  qty: number
 }
 
 type ItemRow = {
-  productId: string     // Firestore document ID (for updates)
-  pid: string           // Snapshot of product code
-  product_name: string  // Snapshot of name
-  selling_price: number // Snapshot of price
-  qty: number           // Quantity to sell
+  productId: string
+  pid: string
+  product_name: string
+  selling_price: number
+  qty: number
+  discount?: number // discount in percent
 }
 
 export default function AddTransactionModal({ onClose, onSuccess }: Props) {
   const [cus_name, setCusName] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<ItemRow[]>([])
+  const [customers, setCustomers] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [createdAt, setCreatedAt] = useState<string>('')
 
-  // Load available products from Firestore
   useEffect(() => {
     const fetchProducts = async () => {
       const user = auth.currentUser
@@ -54,25 +56,31 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
       const snap = await getDocs(collection(db, 'users', user.uid, 'products'))
       const productList: Product[] = snap.docs.map(d => ({
         id: d.id,
-        pid: d.data().pid,
-        name: d.data().name,
-        selling_price: Number(d.data().selling_price || 0),
-        qty: Number(d.data().qty || 0),
+        pid: d.data().product_id || "",
+        name: d.data().product_name || "",
+        selling_price: Number(d.data().suggested_price_usd || 0),
+        qty: Number(d.data().stock_amount || 0),
       }))
       setProducts(productList)
     }
     fetchProducts()
+
+    const fetchCustomers = async () => {
+      const user = auth.currentUser
+      if (!user) return
+      const snap = await getDocs(collection(db, 'users', user.uid, 'customers'))
+      setCustomers(snap.docs.map(d => d.data().customer_name))
+    }
+    fetchCustomers()
   }, [])
 
-  // Add a blank row
   const handleAddRow = () => {
     setItems(prev => [
       ...prev,
-      { productId: '', pid: '', product_name: '', selling_price: 0, qty: 1 }
+      { productId: '', pid: '', product_name: '', selling_price: 0, qty: 1, discount: 0 }
     ])
   }
 
-  // When product is selected from dropdown
   const handleSelectProduct = (index: number, productId: string) => {
     const product = products.find(p => p.id === productId)
     if (!product) return
@@ -82,12 +90,12 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
       pid: product.pid,
       product_name: product.name,
       selling_price: product.selling_price,
-      qty: updated[index]?.qty || 1
+      qty: updated[index]?.qty || 1,
+      discount: updated[index]?.discount || 0
     }
     setItems(updated)
   }
 
-  // Update quantity
   const handleQtyChange = (index: number, qtyStr: string) => {
     const qty = Math.max(1, Number(qtyStr || 0))
     const updated = [...items]
@@ -95,10 +103,20 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     setItems(updated)
   }
 
-  // Calculate totals
-  const totalAmount = items.reduce((sum, i) => sum + i.qty * i.selling_price, 0)
+  const handleDiscountChange = (index: number, discountStr: string) => {
+    let discount = Math.max(0, Math.min(100, Number(discountStr || 0)))
+    const updated = [...items]
+    updated[index].discount = discount
+    setItems(updated)
+  }
 
-  // Save transaction (with stock checks + deductions)
+  const discountedSubtotal = (item: ItemRow) => {
+    const discountRate = item.discount || 0
+    return item.qty * item.selling_price * (1 - discountRate / 100)
+  }
+
+  const totalAmount = items.reduce((sum, i) => sum + discountedSubtotal(i), 0)
+
   const handleSaveTransaction = async () => {
     const user = auth.currentUser
     if (!user) return window.alert('User not logged in')
@@ -106,7 +124,6 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     if (items.length === 0) return window.alert('Add at least one product')
     if (items.some(i => !i.productId)) return window.alert('Please select a product on all rows')
 
-    // Merge duplicate rows by productId
     const mergedMap = new Map<string, ItemRow>()
     for (const i of items) {
       const key = i.productId
@@ -121,7 +138,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
       }
     }
     const mergedItems = Array.from(mergedMap.values())
-    const mergedTotal = mergedItems.reduce((s, i) => s + i.qty * i.selling_price, 0)
+    const mergedTotal = mergedItems.reduce((s, i) => s + discountedSubtotal(i), 0)
 
     const tid = generateTransactionID()
     const userTransactionsRef = collection(db, 'users', user.uid, 'transactions')
@@ -132,15 +149,11 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
           doc(db, 'users', user.uid, 'products', item.productId)
         )
 
-        // 1) READ all product docs first
         const productSnaps = await Promise.all(productRefs.map(ref => tx.get(ref)))
 
-        // 2) Validate stock
         productSnaps.forEach((snap, idx) => {
-          if (!snap.exists()) {
-            throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
-          }
-          const currentQty = Number(snap.data()?.qty || 0)
+          if (!snap.exists()) throw new Error(`Product not found: ${mergedItems[idx].product_name}`)
+          const currentQty = Number(snap.data()?.stock_amount || 0)
           if (mergedItems[idx].qty > currentQty) {
             throw new Error(
               `Not enough stock for ${mergedItems[idx].product_name}. Available: ${currentQty}, Requested: ${mergedItems[idx].qty}`
@@ -148,14 +161,12 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
           }
         })
 
-        // 3) UPDATE all stocks
         productSnaps.forEach((snap, idx) => {
           const ref = productRefs[idx]
-          const currentQty = Number(snap.data()?.qty || 0)
-          tx.update(ref, { qty: currentQty - mergedItems[idx].qty })
+          const currentQty = Number(snap.data()?.stock_amount || 0)
+          tx.update(ref, { stock_amount: currentQty - mergedItems[idx].qty })
         })
 
-        // 4) CREATE transaction doc
         const newTxRef = doc(userTransactionsRef)
         tx.set(newTxRef, {
           tid,
@@ -165,10 +176,12 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
             product_name: i.product_name,
             selling_price: i.selling_price,
             qty: i.qty,
-            subtotal: i.qty * i.selling_price
+            discount: i.discount || 0,
+            subtotal: i.qty * i.selling_price,
+            discounted_subtotal: discountedSubtotal(i)
           })),
           total_amount: mergedTotal,
-          createdAt: new Date()
+          createdAt: createdAt ? new Date(createdAt) : new Date() 
         })
       })
 
@@ -185,14 +198,50 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
         <h2 className="text-xl font-bold mb-4 text-gray-800">Add Transaction</h2>
+        <div className="relative mb-4 flex gap-2">
+          <div className="flex-3 relative w-3/4">
+            <input
+              type="text"
+              value={cus_name}
+              onChange={e => {
+                setCusName(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              placeholder="Customer Name"
+              className="border px-3 py-2 rounded w-full"
+            />
 
-        <input
-          type="text"
-          value={cus_name}
-          onChange={e => setCusName(e.target.value)}
-          placeholder="Customer Name"
-          className="border px-3 py-2 rounded w-full mb-4"
-        />
+            {showSuggestions && cus_name.trim() !== '' && (
+              <ul className="absolute z-10 bg-white border w-full rounded shadow max-h-40 overflow-y-auto">
+                {customers
+                  .filter(name => name.toLowerCase().includes(cus_name.toLowerCase()))
+                  .slice(0, 10)
+                  .map((name, idx) => (
+                    <li
+                      key={idx}
+                      onClick={() => {
+                        setCusName(name)
+                        setShowSuggestions(false)
+                      }}
+                      className="px-3 py-2 hover:bg-gray-200 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+          <div className="flex-1 w-1/4">
+            <input
+              type="datetime-local"
+              value={createdAt ? createdAt : ''}
+              onChange={e => setCreatedAt(e.target.value)}
+              className="border px-3 py-2 rounded w-full"
+            />
+          </div>
+        </div>
+        
 
         {/* Items Table */}
         <table className="w-full border mb-3">
@@ -201,7 +250,8 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
               <th className="p-2 border">Product</th>
               <th className="p-2 border">Price</th>
               <th className="p-2 border">Qty</th>
-              <th className="p-2 border">Subtotal</th>
+              <th className="p-2 border">Discount %</th>
+              <th className="p-2 border">Discounted Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -221,9 +271,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
                     ))}
                   </select>
                 </td>
-                <td className="p-2 border text-right">
-                  {i.selling_price.toFixed(2)}
-                </td>
+                <td className="p-2 border text-right">{i.selling_price.toFixed(2)}</td>
                 <td className="p-2 border">
                   <input
                     type="number"
@@ -233,8 +281,18 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
                     className="border px-2 py-1 rounded w-full"
                   />
                 </td>
+                <td className="p-2 border">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={i.discount || 0}
+                    onChange={e => handleDiscountChange(idx, e.target.value)}
+                    className="border px-2 py-1 rounded w-full"
+                  />
+                </td>
                 <td className="p-2 border text-right">
-                  {(i.qty * i.selling_price).toFixed(2)}
+                  {discountedSubtotal(i).toFixed(2)}
                 </td>
               </tr>
             ))}
@@ -250,7 +308,7 @@ export default function AddTransactionModal({ onClose, onSuccess }: Props) {
 
         {/* Total */}
         <div className="flex justify-end text-lg font-semibold mb-4">
-          Total: Rs. {totalAmount.toFixed(2)}
+          Total: $ {totalAmount.toFixed(2)}
         </div>
 
         <div className="flex justify-end gap-3">
