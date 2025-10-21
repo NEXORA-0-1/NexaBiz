@@ -75,9 +75,11 @@ def ai_handler():
             # Moved above generic "supplier" check
             product_name = (
                 query.replace("who are the best suppliers for", "")
-                     .replace("who are best supplier for", "")
-                     .replace("best supplier for", "")
-                     .strip()
+                    .replace("who is the best supplier for", "")
+                    .replace("who are best supplier for", "")
+                    .replace("who is best supplier for", "")
+                    .replace("best supplier for", "")
+                    .strip()
             )
             print("Extracted product name:", product_name)
             suppliers = get_web_suppliers(product_name)
@@ -87,14 +89,15 @@ def ai_handler():
             response_text = f"Top suppliers for '{product_name}':\n"
             for sup in formatted_suppliers:  # Use formatted_suppliers instead
                 response_text += (
-                    f"- Company: {sup['companyName']}\n"
-                    f"  Contact: {sup['contact']}\n"
-                    f"  Email: {sup['email']}\n"
-                    f"  Description: {sup['description']}\n"
-                    f"  Website: {sup['website']}\n\n"
+                    f"- 🏠Company: {sup['companyName']}\n\n"
+                    f"  ☎Contact: {sup['contact']}\n\n"
+                    f"  📩Email: {sup['email']}\n\n"
+                    f"  📝Description: {sup['description']}\n\n"
+                    f"  🌍Website: {sup['website']}\n\n"
+                    "-------------------------\n\n"
                 )
 
-            response = {"readable_text": response_text, "suppliers": formatted_suppliers}
+            response = {"readable_text": response_text.strip(), "suppliers": formatted_suppliers,"type": "text"}
 
         elif "supply" in query:
             # Handle supply checks separately, only when not "best supplier"

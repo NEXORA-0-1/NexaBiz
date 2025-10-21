@@ -153,7 +153,58 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                 key={idx}
                 className={`bg-white p-2 rounded shadow-sm ${idx % 2 === 0 ? 'self-start' : 'self-end'}`}
               >
-                {msg?.content ?? 'Invalid message'}
+               {typeof msg.content === 'string' && msg.content.startsWith('Top suppliers for') ? (
+                <div className="space-y-3">
+                  {msg.content.split('-------------------------').map((supplier, sIdx) => {
+                    const lines = supplier.trim().split('\n').filter(line => line.trim());
+                    if (!lines.length) return null;
+                    const supplierData = {
+                      company: '',
+                      contact: '',
+                      email: '',
+                      description: '',
+                      website: '',
+                    };
+                    lines.forEach(line => {
+                      if (line.startsWith('- 🏠Company: ')) supplierData.company = line.replace('- 🏠Company: ', '');
+                      if (line.startsWith('  ☎Contact: ')) supplierData.contact = line.replace('  ☎Contact: ', '');
+                      if (line.startsWith('  📩Email: ')) supplierData.email = line.replace('  📩Email: ', '');
+                      if (line.startsWith('  📝Description: ')) supplierData.description = line.replace('  📝Description: ', '');
+                      if (line.startsWith('  🌍Website: ')) supplierData.website = line.replace('  🌍Website: ', '');
+                    });
+                    return (
+                      <div
+                        key={sIdx}
+                        className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-800">{supplierData.company}</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Description:</span> {supplierData.description}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Contact:</span> {supplierData.contact || 'N/A'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          <span className="font-medium">Email:</span> {supplierData.email || 'N/A'}
+                        </p>
+                        <p className="text-sm text-blue-600 mt-1">
+                          <span className="font-medium">Website:</span>{' '}
+                          <a
+                            href={supplierData.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-800"
+                          >
+                            {supplierData.website}
+                          </a>
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p>{msg?.content ?? 'Invalid message'}</p>
+              )}
               </div>
             ))}
             {isTyping && (
