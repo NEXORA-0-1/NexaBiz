@@ -17,28 +17,29 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [nextCustomerId, setNextCustomerId] = useState('C001')
 
   // Generate next C001, C002 format
-  useEffect(() => {
-    const fetchNextId = async () => {
-      const user = auth.currentUser
-      if (!user) return
+useEffect(() => {
+  const fetchNextId = async () => {
+    const user = auth.currentUser
+    if (!user) return
 
-      const userCustomersRef = collection(db, 'users', user.uid, 'customers')
-      const snapshot = await getDocs(userCustomersRef)
+    const userCustomersRef = collection(db, 'users', user.uid, 'customers')
+    const snapshot = await getDocs(userCustomersRef)
 
-      const ids = snapshot.docs.map(doc => doc.data().customer_id)
-      if (ids.length === 0) {
-        setNextCustomerId('C001')
-        return
-      }
-
-      const numbers = ids.map((id: string) => parseInt(id.replace('C', '')))
-      const max = Math.max(...numbers)
-      const newId = `C${String(max + 1).padStart(3, '0')}`
-      setNextCustomerId(newId)
+    const ids = snapshot.docs.map(doc => doc.data().customer_id)
+    if (ids.length === 0) {
+      setNextCustomerId('C0001')
+      return
     }
 
-    fetchNextId()
-  }, [])
+    const numbers = ids.map((id: string) => parseInt(id.replace('C', '')))
+    const max = Math.max(...numbers)
+    const newId = `C${String(max + 1).padStart(4, '0')}`
+    setNextCustomerId(newId)
+  }
+
+  fetchNextId()
+}, [])
+
 
   const handleAddCustomer = async () => {
     const user = auth.currentUser
