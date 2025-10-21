@@ -8,18 +8,12 @@ const { body, validationResult } = require('express-validator');
 dotenv.config();
 
 const serviceAccount = require('./serviceAccountKey.json');
-if (!admin.apps.length) {
-
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-}
 const db = admin.firestore();
 
-//create Express app
 const app = express();
-
 app.use(cors());
 app.use(express.json());
-
 
 // Auth middleware
 const authenticate = async (req, res, next) => {
@@ -40,9 +34,6 @@ app.post('/api/forecast', authenticate, [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  
-  const admin = require('firebase-admin');
-  const serviceAccount = require('../serviceAccountKey.json');
   const { query } = req.body;
   const userId = req.user.uid;
   console.log('Received query:', query, 'User ID:', userId); //debug
@@ -73,11 +64,12 @@ app.post('/api/forecast', authenticate, [
       stock_data,
       transaction_data
     });
-
+    
     res.json(agentResponse.data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(process.env.PORT || 3001, () => console.log(`Backend on port ${process.env.PORT || 3001}`));
+app.listen(process.env.PORT || 3001, () => console.log('Backend on port'+ (process.env.PORT || 3001)));
+
