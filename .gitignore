@@ -47,6 +47,7 @@ __pycache__/
 # Backend-specific files
 /backend/node_modules/
 /backend/serviceAccountKey.json
+/backend/gmailServiceKey.json
 /backend/*.log
 /ai/*.log
 /ai/venv/
