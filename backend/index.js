@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const axios = require('axios');
 const { body, validationResult } = require('express-validator');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
 
 dotenv.config();
 
@@ -15,7 +17,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware
+// -------------------- AUTH MIDDLEWARE --------------------
 const authenticate = async (req, res, next) => {
   const idToken = req.headers.authorization?.split('Bearer ')[1];
   if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
@@ -28,6 +30,7 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+// -------------------- FORECAST ROUTE --------------------
 app.post('/api/forecast', authenticate, [
   body('query').trim().escape()
 ], async (req, res) => {
@@ -36,7 +39,7 @@ app.post('/api/forecast', authenticate, [
 
   const { query } = req.body;
   const userId = req.user.uid;
-  console.log('Received query:', query, 'User ID:', userId); // debug
+  console.log('Received query:', query, 'User ID:', userId);
 
   try {
     // --- Fetch stock data from products collection ---
@@ -90,9 +93,88 @@ app.post('/api/forecast', authenticate, [
 
     res.json(agentResponse.data);
   } catch (error) {
-    console.error('❌ AI agent error:', error.message); // debug
+    console.error('❌ AI agent error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(process.env.PORT || 3001, () => console.log(`Backend running on port ${process.env.PORT || 3001}`));
+// ========================================================
+// NEW SECTION — FIND CONTACTS API
+// ========================================================
+
+// Helper functions
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+const emailRe = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+const phoneRe = /((?:\+94|0)?\s?\d{2,3}[-\s]?\d{3}[-\s]?\d{3,4}|\+?\d{7,15})/g;
+
+async function ddgSearchFirstUrl(query) {
+  const url = 'https://html.duckduckgo.com/html?q=' + encodeURIComponent(query);
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  const text = await res.text();
+  const $ = cheerio.load(text);
+  const link = $('a.result__a').first().attr('href');
+  return link || null;
+}
+
+async function fetchAndExtract(url) {
+  if (!url) return { emails: [], phones: [] };
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+    const text = await res.text();
+    const $ = cheerio.load(text);
+    const bodyText = $('body').text();
+
+    const emails = [
+      ...new Set([
+        ...(bodyText.match(emailRe) || []),
+        ...$('a[href^="mailto:"]').map((i, el) => $(el).attr('href').replace(/^mailto:/i, '').trim()).get(),
+      ])
+    ];
+
+    const phones = [
+      ...new Set([
+        ...(bodyText.match(phoneRe) || []),
+        ...$('a[href^="tel:"]').map((i, el) => $(el).attr('href').replace(/^tel:/i, '').trim()).get(),
+      ])
+    ];
+
+    return { emails, phones };
+  } catch (err) {
+    console.warn('Fetch error:', url, err.message);
+    return { emails: [], phones: [] };
+  }
+}
+
+// -------------------- FIND CONTACTS ROUTE --------------------
+app.get('/api/findContacts', async (req, res) => {
+  try {
+    const names = [
+      'NOLIMIT Glitz Colombo',
+      'Malaka Trade Center Wellawatte Colombo',
+      // Add more if needed
+    ];
+
+    const results = [];
+    for (const name of names) {
+      console.log('🔍 Searching:', name);
+      const firstUrl = await ddgSearchFirstUrl(name + ' contact phone email Sri Lanka');
+      console.log('🌐 Found URL:', firstUrl);
+      const contact = await fetchAndExtract(firstUrl);
+      results.push({ name, url: firstUrl, emails: contact.emails, phones: contact.phones });
+      await delay(1500);
+    }
+
+    const filtered = results.filter(r => r.emails.length > 0 || r.phones.length > 0);
+    res.json(filtered);
+  } catch (err) {
+    console.error('❌ FindContacts Error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ========================================================
+
+app.listen(process.env.PORT || 3001, () =>
+  console.log(`Backend running on port ${process.env.PORT || 3001}`)
+);
