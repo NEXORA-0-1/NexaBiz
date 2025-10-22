@@ -17,23 +17,28 @@ export default function SentPage() {
 
   // Load dummy sent emails (replace later with real Gmail API)
   useEffect(() => {
-    setEmails([
-      {
-        id: '1',
-        to: 'customer1@gmail.com',
-        subject: 'Re: Question about Jeans 19',
-        body: 'Hi, Jeans 19 will be available next week. Thank you for asking!',
-        date: '2025-10-21 11:00',
-      },
-      {
-        id: '2',
-        to: 'customer2@gmail.com',
-        subject: 'Re: Order status',
-        body: 'Hello, your order is currently being processed and will ship tomorrow.',
-        date: '2025-10-20 15:00',
-      },
-    ])
-  }, [])
+  const fetchSentEmails = async () => {
+    try {
+      const res = await fetch('/api/gmail?label=SENT')
+      const data = await res.json()
+
+      const mappedEmails: SentEmail[] = data.map((email: any) => ({
+        id: email.id,
+        to: email.to,
+        subject: email.subject,
+        body: email.body,
+        date: email.date,
+      }))
+
+      setEmails(mappedEmails)
+    } catch (error) {
+      console.error('Error fetching sent emails:', error)
+      setEmails([])
+    }
+  }
+
+  fetchSentEmails()
+}, [])
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))

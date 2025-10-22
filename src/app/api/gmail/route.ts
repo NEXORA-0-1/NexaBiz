@@ -25,14 +25,22 @@ export async function GET(req: Request) {
       maxResults: 10,
     })
 
+    if (!res.data.messages || res.data.messages.length === 0) {
+      return NextResponse.json([])
+    }
+
     const messages = await Promise.all(
-      (res.data.messages || []).map(async (msg) => {
+      res.data.messages.map(async (msg) => {
         const detail = await gmail.users.messages.get({ userId: 'me', id: msg.id })
-        const snippet = detail.data.snippet
+        const snippet = detail.data.snippet || ''
         const headers = detail.data.payload?.headers || []
+
         const from = headers.find((h) => h.name === 'From')?.value || 'Unknown'
+        const to = headers.find((h) => h.name === 'To')?.value || 'Unknown'
         const subject = headers.find((h) => h.name === 'Subject')?.value || 'No Subject'
-        return { id: msg.id, from, subject, snippet }
+        const date = headers.find((h) => h.name === 'Date')?.value || ''
+
+        return { id: msg.id, from, to, subject, body: snippet, date }
       })
     )
 
