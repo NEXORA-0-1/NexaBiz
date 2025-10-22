@@ -15,27 +15,36 @@ interface Email {
 export default function InboxPage() {
   const [emails, setEmails] = useState<Email[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
 
-  // Load dummy emails (replace with real Gmail later)
-  useEffect(() => {
-    setEmails([
-      {
-        id: '1',
-        from: 'customer1@gmail.com',
-        subject: 'Question about Jeans 19',
-        body: 'Hi, can you tell me when Jeans 19 will be available?',
-        date: '2025-10-21 10:30',
+  // Fetch emails from backend API
+  const fetchEmails = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/gmail?label=INBOX')
+      const data = await res.json()
+
+      // Map backend email data to Email type
+      const mappedEmails: Email[] = data.map((email: any, index: number) => ({
+        id: email.id,
+        from: email.from,
+        subject: email.subject,
+        body: email.body || 'No preview available',
+        date: email.date,
         read: false,
-      },
-      {
-        id: '2',
-        from: 'customer2@gmail.com',
-        subject: 'Order status',
-        body: 'Hello, I want to check the status of my last order.',
-        date: '2025-10-20 14:15',
-        read: true,
-      },
-    ])
+      }))
+
+      setEmails(mappedEmails)
+    } catch (err) {
+      console.error('Error fetching emails:', err)
+      setEmails([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchEmails()
   }, [])
 
   const handleToggleExpand = (id: string) => {
@@ -56,6 +65,8 @@ export default function InboxPage() {
   const handleReply = (email: Email) => {
     alert(`Reply to ${email.from} - Feature coming soon!`)
   }
+
+  if (loading) return <p className="text-gray-500">Loading emails...</p>
 
   return (
     <div>
