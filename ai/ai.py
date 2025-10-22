@@ -39,6 +39,20 @@ def run_demand_predictor(query, stock_data, transaction_data):
         return {"error": f"Request to demand_predictor failed: {str(e)}"}
 
 # ----------------------
+
+
+def run_auto_reply(email_text):
+    try:
+        url = "http://127.0.0.1:5004/auto_reply"  # your auto_reply_agent endpoint
+        payload = {"email_text": email_text}
+        response = requests.post(url, json=payload, timeout=15)
+        if response.status_code != 200:
+            return {"error": f"auto_reply_agent returned {response.status_code}: {response.text}"}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Request to auto_reply_agent failed: {str(e)}"}
+
+
 # Dummy agents
 # ----------------------
 def run_order_optimizer(query, stock_data, transaction_data):
@@ -120,3 +134,5 @@ def ai_handler():
 # ----------------------
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5001, debug=True)
+
+

@@ -178,3 +178,34 @@ app.get('/api/findContacts', async (req, res) => {
 app.listen(process.env.PORT || 3001, () =>
   console.log(`Backend running on port ${process.env.PORT || 3001}`)
 );
+
+// -------------------- AI AUTO-REPLY ROUTE --------------------
+app.post('/api/ai-reply', authenticate, async (req, res) => {
+  const { email } = req.body; // { from, subject, body }
+  if (!email || !email.body) {
+    return res.status(400).json({ error: 'Missing email data' });
+  }
+
+  const userId = req.user.uid;
+
+  try {
+    // --- Fetch data from Firestore ---
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
+    const stock_data = productsSnap.docs.map(doc => doc.data());
+
+    const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
+    const transaction_data = transactionsSnap.docs.map(doc => doc.data());
+
+    // --- Send to Python AI ---
+    const aiResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
+      email,
+      stock_data,
+      transaction_data
+    });
+
+    return res.json({ reply: aiResponse.data.reply });
+  } catch (err) {
+    console.error('AI Reply Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});

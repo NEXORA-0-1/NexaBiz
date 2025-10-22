@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { FaTrash, FaReply } from 'react-icons/fa'
+import { getAuth } from "firebase/auth";
+
+async function getAuthToken() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  return user ? await user.getIdToken() : null;
+}
 
 interface Email {
   id: string
@@ -113,6 +120,28 @@ export default function InboxPage() {
                       className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     >
                       <FaTrash /> Delete
+                    </button>
+                    <button
+                      onClick={async e => {
+                        e.stopPropagation();
+
+                        const token = await getAuthToken(); // Firebase user token
+                        const res = await fetch("http://localhost:3001/api/ai-reply", {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({ email }), // includes { from, subject, body }
+                        });
+
+                        const data = await res.json();
+                        if (data.error) alert("AI Error: " + data.error);
+                        else alert("🤖 Suggested reply:\n\n" + data.reply);
+                      }}
+                      className="flex items-center gap-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      🤖 AI Generate Reply
                     </button>
                   </div>
                 </div>
