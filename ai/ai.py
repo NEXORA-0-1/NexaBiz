@@ -72,6 +72,21 @@ def supply_checker(query, stock_data, product_name=None):
     except requests.exceptions.RequestException as e:
         return {"error": f"Request to supply_checker failed: {str(e)}"}
 
+def run_trend_analyzer(query, stock_data, transaction_data):
+    try:
+        url = "http://127.0.0.1:5004/analyze_trends"
+        payload = {
+            "query": query,
+            "stock_data": stock_data,
+            "transaction_data": transaction_data
+        }
+        response = requests.post(url, json=payload, timeout=30)
+        if response.status_code != 200:
+            return {"error": f"trend_analyzer returned {response.status_code}: {response.text}"}
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Request to trend_analyzer failed: {str(e)}"}
+
 # ----------------------
 # Universal Endpoint
 # ----------------------
@@ -93,6 +108,9 @@ def ai_handler():
         elif "supply" in query or "supplier" in query:
             product_name = query.split("for")[-1].strip() if "for" in query else None
             response = supply_checker(query, stock_data, product_name)
+        elif "trend" in query_lower or "sales trend" in query_lower or "anomal" in query_lower:
+            response = run_trend_analyzer(query, stock_data, transaction_data)
+
         else:
             # Fallback to Gemini AI for general queries
             try:

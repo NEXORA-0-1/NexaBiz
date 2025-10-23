@@ -62,6 +62,7 @@ ai/universal_agent_logs.txt
 ai/supply_checker_logs.txt
 ai/order_generator_logs.txt
 ai/order_optimizer_logs.txt
+ai/trend_analyzer_logs.txt
 
 # IDE/project files
 .idea/
