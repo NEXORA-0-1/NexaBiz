@@ -157,7 +157,10 @@ export default function InboxPage() {
                       <h4 className="font-semibold text-sm mb-1 text-gray-700">
                         🤖 AI Suggested Reply:
                       </h4>
-                      <p className="text-sm whitespace-pre-line">{aiReply[email.id]}</p>
+                      <div
+                        className="text-sm"
+                        dangerouslySetInnerHTML={{ __html: aiReply[email.id] }}
+                      />
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

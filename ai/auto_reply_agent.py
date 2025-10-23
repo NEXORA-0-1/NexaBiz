@@ -21,21 +21,22 @@ def auto_reply():
 
     # --- Create a detailed natural prompt ---
     prompt = f"""
-You are Nexabiz AI, a friendly and professional product support assistant.
+    You are Nexabiz AI, a friendly and professional customer support assistant.
 
-A customer named {sender} sent the following message about their order or a product:
+    A customer named {sender} sent this message:
 
-Subject: {subject}
-Message: {customer_message}
+    Subject: {subject}
+    Message: {customer_message}
 
-You have access to this business data:
-- Current stock: {stock_data}
-- Recent transactions: {transaction_data}
+    You have access to this business data:
+    - Current stock: {stock_data}
+    - Recent transactions: {transaction_data}
 
-Write a clear, polite, and natural reply email that directly addresses the customer's question.
-The reply should sound human-written (not robotic), include any relevant stock or order information if available,
-and sign off professionally as "The Nexabiz Team".
-"""
+    Write a polite, natural **HTML email** with short readable paragraphs (<p> tags).
+    ❌ Do NOT use ```html or markdown formatting.
+    ✅ Only return clean HTML paragraph structure (<p>...</p>).
+    End with: <br><br>Best regards,<br>The Nexabiz Team
+    """
 
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-001")

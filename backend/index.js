@@ -235,15 +235,30 @@ app.post("/api/gmail/send", async (req, res) => {
 
     const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
 
+    // --- Clean and format AI HTML ---
+    let cleanBody = body
+      .replace(/```html|```/g, "")       // remove markdown fences
+      .replace(/\n{2,}/g, "\n")          // collapse extra blank lines
+      .trim();
+
+    // If the AI text doesn’t already have <p> tags, wrap it
+    if (!/<p>/i.test(cleanBody)) {
+      cleanBody = cleanBody
+        .split(/\n+/)
+        .map(line => `<p>${line.trim()}</p>`)
+        .join("\n");
+    }
+
     const rawMessage = [
       `To: ${to}`,
       `Subject: ${subject}`,
       `Content-Type: text/html; charset=utf-8`,
       "",
-      body,
+      cleanBody,
     ]
       .join("\n")
       .trim();
+
 
     const encodedMessage = Buffer.from(rawMessage)
       .toString("base64")
