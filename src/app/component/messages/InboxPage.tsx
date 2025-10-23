@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaTrash, FaReply } from 'react-icons/fa'
+import { FaTrash } from 'react-icons/fa'
 import { getAuth } from "firebase/auth";
 
 async function getAuthToken() {
@@ -23,6 +23,7 @@ export default function InboxPage() {
   const [emails, setEmails] = useState<Email[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [aiReply, setAiReply] = useState<{ [id: string]: string }>({})
 
   // Fetch emails from backend API
   const fetchEmails = async () => {
@@ -32,7 +33,7 @@ export default function InboxPage() {
       const data = await res.json()
 
       // Map backend email data to Email type
-      const mappedEmails: Email[] = data.map((email: any, index: number) => ({
+      const mappedEmails: Email[] = data.map((email: any) => ({
         id: email.id,
         from: email.from,
         subject: email.subject,
@@ -56,7 +57,6 @@ export default function InboxPage() {
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
-    // Mark as read when expanded
     setEmails(prev =>
       prev.map(email =>
         email.id === id ? { ...email, read: true } : email
@@ -69,9 +69,59 @@ export default function InboxPage() {
     setEmails(prev => prev.filter(email => email.id !== id))
   }
 
-  const handleReply = (email: Email) => {
-    alert(`Reply to ${email.from} - Feature coming soon!`)
-  }
+  // === Generate AI Reply ===
+  const handleAIReply = async (email: Email) => {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch("http://localhost:3001/api/ai-reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert("AI Error: " + data.error);
+      } else {
+        setAiReply(prev => ({ ...prev, [email.id]: data.reply }));
+      }
+    } catch (err) {
+      console.error("AI reply fetch failed:", err);
+      alert("Failed to generate AI reply");
+    }
+  };
+
+  // === Send Reply via Gmail ===
+  const handleSendReply = async (email: Email) => {
+    const replyText = aiReply[email.id];
+    if (!replyText) return alert("No AI reply generated!");
+
+    try {
+      const res = await fetch("http://localhost:3001/api/gmail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: email.from,
+          subject: "Re: " + email.subject,
+          body: replyText,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("✅ Reply sent successfully!");
+        setAiReply(prev => ({ ...prev, [email.id]: "" })); // clear after sending
+      } else {
+        alert("❌ Failed to send: " + data.error);
+      }
+    } catch (err) {
+      console.error("Send reply failed:", err);
+      alert("Failed to send email");
+    }
+  };
 
   if (loading) return <p className="text-gray-500">Loading emails...</p>
 
@@ -101,47 +151,45 @@ export default function InboxPage() {
                 <div className="mt-4 border-t pt-4 space-y-2 text-gray-700">
                   <p>{email.body}</p>
 
+                  {/* AI Suggested Reply Section */}
+                  {aiReply[email.id] && (
+                    <div className="mt-3 p-3 bg-gray-100 rounded-md border">
+                      <h4 className="font-semibold text-sm mb-1 text-gray-700">
+                        🤖 AI Suggested Reply:
+                      </h4>
+                      <p className="text-sm whitespace-pre-line">{aiReply[email.id]}</p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSendReply(email);
+                        }}
+                        className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                      >
+                        Send Reply
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
                   <div className="flex gap-3 mt-3">
                     <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleReply(email)
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAIReply(email);
                       }}
-                      className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                      className="flex items-center gap-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
                     >
-                      <FaReply /> Reply
+                      🤖 Generate Reply
                     </button>
 
                     <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleDelete(email.id)
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(email.id);
                       }}
                       className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                     >
                       <FaTrash /> Delete
-                    </button>
-                    <button
-                      onClick={async e => {
-                        e.stopPropagation();
-
-                        const token = await getAuthToken(); // Firebase user token
-                        const res = await fetch("http://localhost:3001/api/ai-reply", {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${token}`,
-                          },
-                          body: JSON.stringify({ email }), // includes { from, subject, body }
-                        });
-
-                        const data = await res.json();
-                        if (data.error) alert("AI Error: " + data.error);
-                        else alert("🤖 Suggested reply:\n\n" + data.reply);
-                      }}
-                      className="flex items-center gap-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                    >
-                      🤖 AI Generate Reply
                     </button>
                   </div>
                 </div>

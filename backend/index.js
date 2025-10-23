@@ -6,6 +6,9 @@ const axios = require('axios');
 const { body, validationResult } = require('express-validator');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
+const { google } = require("googleapis");
+const fs = require("fs");
+const path = require("path");
 
 dotenv.config();
 
@@ -206,6 +209,56 @@ app.post('/api/ai-reply', authenticate, async (req, res) => {
     return res.json({ reply: aiResponse.data.reply });
   } catch (err) {
     console.error('AI Reply Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/gmail/send", async (req, res) => {
+  try {
+    const { to, subject, body } = req.body;
+    if (!to || !subject || !body)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const credentialsPath = path.join(__dirname, 'gmailOAuth.json');
+    const tokenPath = path.join(__dirname, 'token.json');
+
+    const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
+    const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+
+    const { client_secret, client_id, redirect_uris } = credentials.web;
+    const oAuth2Client = new google.auth.OAuth2(
+      client_id,
+      client_secret,
+      redirect_uris[0]
+    );
+    oAuth2Client.setCredentials(token);
+
+    const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+
+    const rawMessage = [
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/html; charset=utf-8`,
+      "",
+      body,
+    ]
+      .join("\n")
+      .trim();
+
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    await gmail.users.messages.send({
+      userId: "me",
+      resource: { raw: encodedMessage },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Gmail send error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
