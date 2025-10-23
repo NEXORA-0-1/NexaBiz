@@ -50,6 +50,21 @@ def supply_checker(query, stock_data, product_name=None):
     except requests.exceptions.RequestException as e:
         return {"error": f"Request to supply_checker failed: {str(e)}"}
 
+def negotiate_with_supplier(product_name, supplier, user_request):
+    """Call negotiation service to send email to supplier."""
+    url = "http://127.0.0.1:5003/negotiate"
+    try:
+        payload = {
+            "product_name": product_name,
+            "supplier": supplier,
+            "user_request": user_request
+        }
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Request to negotiation service failed: {str(e)}"}
+
 
 # ----------------------
 # Universal Endpoint
@@ -58,7 +73,7 @@ def supply_checker(query, stock_data, product_name=None):
 def ai_handler():
     try:
         data = request.get_json()
-        #print(" /ai received:", data)
+        print(" /ai received:", data)
 
         query = data.get("query", "").lower()
         stock_data = data.get("stock_data", [])
@@ -98,6 +113,17 @@ def ai_handler():
                 )
 
             response = {"readable_text": response_text.strip(), "suppliers": formatted_suppliers,"type": "text"}
+
+        elif "negotiate" in query or "email supplier" in query:
+            product_name = query.split("for")[-1].strip() if "for" in query else ""
+            user_request = query  # Full query as user intent
+            suppliers = get_web_suppliers(product_name) if product_name else []
+            if not suppliers:
+                return jsonify({"error": "No suppliers found for negotiation"}), 400
+
+            # Negotiate with the first supplier (or add logic to select one)
+            response = negotiate_with_supplier(product_name, format_suppliers(suppliers)[0], user_request)
+            response["readable_text"] = f"Negotiation email sent for {product_name}:\n{response.get('email_content', 'Email sent.')}"
 
         elif "supply" in query:
             # Handle supply checks separately, only when not "best supplier"
