@@ -7,8 +7,8 @@ const { body, validationResult } = require('express-validator');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const { google } = require("googleapis");
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 
@@ -45,13 +45,7 @@ app.post('/api/forecast', authenticate, [
   console.log('Received query:', query, 'User ID:', userId);
 
   try {
-    // --- Fetch stock data from products collection ---
-    const productsSnap = await db
-      .collection('users')
-      .doc(userId)
-      .collection('products')
-      .get();
-
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
     const stock_data = productsSnap.docs.map(doc => {
       const data = doc.data();
       return {
@@ -63,9 +57,6 @@ app.post('/api/forecast', authenticate, [
       };
     });
 
-    console.log("✅ Final stock_data being sent to AI:", JSON.stringify(stock_data, null, 2));
-
-    // --- Fetch transaction data ---
     const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
     const transaction_data = transactionsSnap.docs.map(doc => {
       const data = doc.data();
@@ -83,16 +74,11 @@ app.post('/api/forecast', authenticate, [
       };
     });
 
-    console.log("✅ Transaction data being sent to AI:", JSON.stringify(transaction_data, null, 2));
-
-    // --- Call Python AI Agent ---
     const agentResponse = await axios.post('http://127.0.0.1:5001/ai', {
       query,
       stock_data,
       transaction_data
     });
-
-    console.log("✅ AI agent response received");
 
     res.json(agentResponse.data);
   } catch (error) {
@@ -107,7 +93,6 @@ app.post('/api/forecast', authenticate, [
 
 // Helper functions
 const delay = ms => new Promise(res => setTimeout(res, ms));
-
 const emailRe = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
 const phoneRe = /((?:\+94|0)?\s?\d{2,3}[-\s]?\d{3}[-\s]?\d{3,4}|\+?\d{7,15})/g;
 
@@ -155,7 +140,6 @@ app.get('/api/findContacts', async (req, res) => {
     const names = [
       'NOLIMIT Glitz Colombo',
       'Malaka Trade Center Wellawatte Colombo',
-      // Add more if needed
     ];
 
     const results = [];
@@ -178,33 +162,49 @@ app.get('/api/findContacts', async (req, res) => {
 
 // ========================================================
 
-app.listen(process.env.PORT || 3001, () =>
-  console.log(`Backend running on port ${process.env.PORT || 3001}`)
-);
-
-// -------------------- AI AUTO-REPLY ROUTE --------------------
+// -------------------- AI AUTO-REPLY ROUTE WITH AUTO ORDER --------------------
 app.post('/api/ai-reply', authenticate, async (req, res) => {
   const { email } = req.body; // { from, subject, body }
-  if (!email || !email.body) {
-    return res.status(400).json({ error: 'Missing email data' });
-  }
+  if (!email || !email.body) return res.status(400).json({ error: 'Missing email data' });
 
   const userId = req.user.uid;
 
   try {
-    // --- Fetch data from Firestore ---
+    // --- Fetch stock & transactions ---
     const productsSnap = await db.collection('users').doc(userId).collection('products').get();
     const stock_data = productsSnap.docs.map(doc => doc.data());
 
     const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
     const transaction_data = transactionsSnap.docs.map(doc => doc.data());
 
-    // --- Send to Python AI ---
+    // --- Call AI to detect order or reply ---
     const aiResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
       email,
       stock_data,
       transaction_data
     });
+
+    // --- If AI detected order, process it ---
+    if (aiResponse.data.orderDetected) {
+      const orderResponse = await axios.post(`${req.protocol}://${req.get('host')}/api/processOrder`, {
+        customer_name: aiResponse.data.customer_name,
+        items: aiResponse.data.items
+      }, { headers: { Authorization: req.headers.authorization } });
+
+      // --- Send processed order back to AI for confirmation message ---
+      const confirmationResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
+        email: {
+          from: email.from,
+          subject: "Order Confirmation",
+          body: "Here are your order details"
+        },
+        stock_data,
+        transaction_data,
+        processedOrder: orderResponse.data
+      });
+
+      return res.json({ reply: confirmationResponse.data.reply });
+    }
 
     return res.json({ reply: aiResponse.data.reply });
   } catch (err) {
@@ -213,6 +213,85 @@ app.post('/api/ai-reply', authenticate, async (req, res) => {
   }
 });
 
+// -------------------- PROCESS ORDER ROUTE --------------------
+app.post('/api/processOrder', authenticate, async (req, res) => {
+  const { customer_name, items, createdAt } = req.body;
+  if (!customer_name || !items || items.length === 0) return res.status(400).json({ error: "Invalid order data" });
+
+  const userId = req.user.uid;
+
+  try {
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
+    const productsMap = new Map();
+    productsSnap.docs.forEach(doc => {
+      const d = doc.data();
+      productsMap.set(d.product_name.toLowerCase(), { id: doc.id, stock: Number(d.stock_amount || 0), selling_price: Number(d.suggested_price_usd || 0), pid: d.product_id || "" });
+    });
+
+    const transactionItems = [];
+    const outOfStock = [];
+
+    const mergedMap = new Map();
+    items.forEach(item => {
+      const key = item.product_name.toLowerCase();
+      const prevQty = mergedMap.get(key) || 0;
+      mergedMap.set(key, prevQty + Number(item.qty || 0));
+    });
+
+    const tid = 'TID' + Math.random().toString(36).substring(2, 12).toUpperCase();
+    const userTransactionsRef = db.collection('users').doc(userId).collection('transactions');
+
+    await db.runTransaction(async (tx) => {
+      const productRefs = [];
+      const productUpdates = [];
+
+      mergedMap.forEach((qty, name) => {
+        if (!productsMap.has(name)) {
+          outOfStock.push(name);
+          return;
+        }
+        const prod = productsMap.get(name);
+        if (qty > prod.stock) {
+          outOfStock.push(name);
+        } else {
+          transactionItems.push({
+            pid: prod.pid,
+            product_name: name,
+            selling_price: prod.selling_price,
+            qty,
+            discount: 0,
+            subtotal: prod.selling_price * qty,
+            discounted_subtotal: prod.selling_price * qty
+          });
+          productRefs.push(db.collection('users').doc(userId).collection('products').doc(prod.id));
+          productUpdates.push(prod.stock - qty);
+        }
+      });
+
+      productRefs.forEach((ref, idx) => {
+        tx.update(ref, { stock_amount: productUpdates[idx] });
+      });
+
+      if (transactionItems.length > 0) {
+        const newTxRef = userTransactionsRef.doc();
+        tx.set(newTxRef, {
+          tid,
+          cus_name: customer_name,
+          items: transactionItems,
+          total_amount: transactionItems.reduce((s, i) => s + i.discounted_subtotal, 0),
+          createdAt: createdAt ? new Date(createdAt) : new Date()
+        });
+      }
+    });
+
+    res.json({ tid, customer_name, transactionItems, outOfStock });
+  } catch (err) {
+    console.error("Order processing error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- GMAIL SEND --------------------
 app.post("/api/gmail/send", async (req, res) => {
   try {
     const { to, subject, body } = req.body;
@@ -226,50 +305,21 @@ app.post("/api/gmail/send", async (req, res) => {
     const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
 
     const { client_secret, client_id, redirect_uris } = credentials.web;
-    const oAuth2Client = new google.auth.OAuth2(
-      client_id,
-      client_secret,
-      redirect_uris[0]
-    );
+    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
     oAuth2Client.setCredentials(token);
 
     const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
 
-    // --- Clean and format AI HTML ---
-    let cleanBody = body
-      .replace(/```html|```/g, "")       // remove markdown fences
-      .replace(/\n{2,}/g, "\n")          // collapse extra blank lines
-      .trim();
-
-    // If the AI text doesn’t already have <p> tags, wrap it
+    let cleanBody = body.replace(/```html|```/g, "").replace(/\n{2,}/g, "\n").trim();
     if (!/<p>/i.test(cleanBody)) {
-      cleanBody = cleanBody
-        .split(/\n+/)
-        .map(line => `<p>${line.trim()}</p>`)
-        .join("\n");
+      cleanBody = cleanBody.split(/\n+/).map(line => `<p>${line.trim()}</p>`).join("\n");
     }
 
-    const rawMessage = [
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      `Content-Type: text/html; charset=utf-8`,
-      "",
-      cleanBody,
-    ]
-      .join("\n")
-      .trim();
+    const rawMessage = [`To: ${to}`, `Subject: ${subject}`, `Content-Type: text/html; charset=utf-8`, "", cleanBody].join("\n").trim();
 
+    const encodedMessage = Buffer.from(rawMessage).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-    const encodedMessage = Buffer.from(rawMessage)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    await gmail.users.messages.send({
-      userId: "me",
-      resource: { raw: encodedMessage },
-    });
+    await gmail.users.messages.send({ userId: "me", resource: { raw: encodedMessage } });
 
     res.json({ success: true });
   } catch (err) {
@@ -277,3 +327,6 @@ app.post("/api/gmail/send", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// -------------------- START SERVER --------------------
+app.listen(process.env.PORT || 3001, () => console.log(`Backend running on port ${process.env.PORT || 3001}`));
