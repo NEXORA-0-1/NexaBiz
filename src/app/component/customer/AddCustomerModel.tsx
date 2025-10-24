@@ -1,4 +1,3 @@
-// components/AddCustomerModal.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -14,38 +13,38 @@ export default function AddCustomerModal({ onClose, onSuccess }: Props) {
   const [customerName, setCustomerName] = useState('')
   const [businessType, setBusinessType] = useState('')
   const [location, setLocation] = useState('')
+  const [email, setEmail] = useState('')
   const [nextCustomerId, setNextCustomerId] = useState('C001')
 
   // Generate next C001, C002 format
-useEffect(() => {
-  const fetchNextId = async () => {
-    const user = auth.currentUser
-    if (!user) return
+  useEffect(() => {
+    const fetchNextId = async () => {
+      const user = auth.currentUser
+      if (!user) return
 
-    const userCustomersRef = collection(db, 'users', user.uid, 'customers')
-    const snapshot = await getDocs(userCustomersRef)
+      const userCustomersRef = collection(db, 'users', user.uid, 'customers')
+      const snapshot = await getDocs(userCustomersRef)
 
-    const ids = snapshot.docs.map(doc => doc.data().customer_id)
-    if (ids.length === 0) {
-      setNextCustomerId('C0001')
-      return
+      const ids = snapshot.docs.map(doc => doc.data().customer_id)
+      if (ids.length === 0) {
+        setNextCustomerId('C0001')
+        return
+      }
+
+      const numbers = ids.map((id: string) => parseInt(id.replace('C', '')))
+      const max = Math.max(...numbers)
+      const newId = `C${String(max + 1).padStart(4, '0')}`
+      setNextCustomerId(newId)
     }
 
-    const numbers = ids.map((id: string) => parseInt(id.replace('C', '')))
-    const max = Math.max(...numbers)
-    const newId = `C${String(max + 1).padStart(4, '0')}`
-    setNextCustomerId(newId)
-  }
-
-  fetchNextId()
-}, [])
-
+    fetchNextId()
+  }, [])
 
   const handleAddCustomer = async () => {
     const user = auth.currentUser
     if (!user) return alert('User not logged in')
 
-    if (!customerName || !businessType || !location) {
+    if (!customerName || !businessType || !location || !email) {
       return alert('All fields are required')
     }
 
@@ -56,6 +55,7 @@ useEffect(() => {
       customer_name: customerName,
       business_type: businessType,
       location,
+      email, // added email field
       createdAt: new Date()
     })
 
@@ -78,16 +78,24 @@ useEffect(() => {
           className="border px-3 py-2 rounded w-full mb-3"
         />
 
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="Email"
+          className="border px-3 py-2 rounded w-full mb-3"
+        />
+
         <select
-        value={businessType}
-        onChange={e => setBusinessType(e.target.value)}
-        className="border px-3 py-2 rounded w-full mb-3"
+          value={businessType}
+          onChange={e => setBusinessType(e.target.value)}
+          className="border px-3 py-2 rounded w-full mb-3"
         >
-            <option value="">Select Business Type</option>
-            <option value="OnlineDistributor">Online Distributor</option>
-            <option value="RetailChain">Retail Chain</option>
-            <option value="ExportAgent">Export Agent</option>
-            <option value="Boutique">Boutique</option>
+          <option value="">Select Business Type</option>
+          <option value="OnlineDistributor">Online Distributor</option>
+          <option value="RetailChain">Retail Chain</option>
+          <option value="ExportAgent">Export Agent</option>
+          <option value="Boutique">Boutique</option>
         </select>
 
         <input

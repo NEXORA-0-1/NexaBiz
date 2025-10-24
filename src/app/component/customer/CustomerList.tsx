@@ -78,6 +78,9 @@ export default function MyCustomerList() {
                     <strong>Customer ID:</strong> {customer.customer_id}
                   </p>
                   <p>
+                    <strong>Customer Email:</strong> {customer.email}
+                  </p>
+                  <p>
                     <strong>Business Type:</strong> {customer.business_type}
                   </p>
                   <p>
