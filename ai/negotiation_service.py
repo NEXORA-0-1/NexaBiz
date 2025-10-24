@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 import logging
 import re
+import google.generativeai as genai
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,35 +22,53 @@ MAILTRAP_USERNAME = os.getenv("MAILTRAP_USERNAME")
 MAILTRAP_PASSWORD = os.getenv("MAILTRAP_PASSWORD")
 MAILTRAP_API_TOKEN = os.getenv("MAILTRAP_API_TOKEN")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "buyer@wac.com")
+MAILTRAP_INBOX_ID = os.getenv("MAILTRAP_INBOX_ID", "4122577")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+##unit_testing
+for model in genai.list_models():
+    print(model.name)
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
+# Logging
+logging.basicConfig(filename='negotiation_service_logs.txt', level=logging.INFO)
+
 # Mock LLM function
 def generate_negotiation_email(product_name, supplier, user_request):
     """
     Generate a negotiation email using an LLM.
-    In a real implementation, call an LLM API (e.g., Grok, OpenAI).
+    In a real implementation, call an LLM API (e.g., Gemini).
     """
     company_name = supplier.get("companyName", "Unknown Company")
     supplier_email = supplier.get("email", "info@unknown.com")
     prompt = (
         f"Write a professional negotiation email to a supplier named '{company_name}' "
         f"for the product '{product_name}'. The user wants: {user_request}. "
-        f"Address the email to {supplier_email}. Be polite, concise, and professional."
+        f"Address the email to {supplier_email}. Be polite, concise, and professional. "
+        f"Include a subject line and sign it as 'Supply Manager, NexxaBiz'."
     )
 
-    # Mock response (replace with actual LLM call)
-    email_content = (
-        f"Subject: Inquiry About {product_name} Pricing and Terms\n\n"
-        f"Dear {company_name} Team,\n\n"
-        f"I hope this message finds you well. I am reaching out from YourCompany regarding your {product_name} offerings. "
-        f"We are interested in {user_request.lower()}. Could you please provide your best pricing, bulk discounts, and delivery terms?\n\n"
-        f"Thank you for your time, and I look forward to your response.\n\n"
-        f"Best regards,\n supply manager\nNexxaBiz\n{SENDER_EMAIL}"
-    )
-    return email_content
+    try:
+        model = genai.GenerativeModel("models/gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        email_content = response.text.strip()
+        logger.info("Gemini email generated successfully.")
+        return email_content
+
+    except Exception as e:
+        logger.error(f"Gemini API Error: {e}")
+        # fallback text if Gemini API fails
+        return (
+            f"Subject: Inquiry About {product_name} Pricing and Terms\n\n"
+            f"Dear {company_name} Team,\n\n"
+            f"I hope this message finds you well. I am reaching out regarding {product_name}. "
+            f"We are interested in {user_request.lower()}. Could you please share your best pricing, "
+            f"bulk discounts, and delivery terms?\n\n"
+            f"Best regards,\nSupply Manager\nNexxaBiz\n{SENDER_EMAIL}"
+        )
 
 def send_email(to_email, subject, body):
     """Send email via Mailtrap SMTP."""
@@ -70,7 +89,7 @@ def send_email(to_email, subject, body):
         logger.error(f"Failed to send email to {to_email}: {e}")
         return False
 
-def parse_supplier_response(inbox_id="your_inbox_id"):
+def parse_supplier_response(inbox_id=MAILTRAP_INBOX_ID):
     """Retrieve and parse supplier responses from Mailtrap inbox."""
     try:
         headers = {"Api-Token": MAILTRAP_API_TOKEN}
