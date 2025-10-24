@@ -5,18 +5,20 @@ import { auth, db } from '@/lib/firebase'
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
 import { FaTrash } from 'react-icons/fa'
 
+type StockItem = {
+  pid: string
+  product_name: string
+  suggested_price_usd: number
+  qty: number
+  subtotal: number
+}
+
 type Stock = {
   id: string
   supplierName: string
   total: number
   createdAt: any
-  items: {
-    pid: string
-    product_name: string
-    purchase_price: number
-    qty: number
-    subtotal: number
-  }[]
+  items: StockItem[]
 }
 
 export default function StockList() {
@@ -27,12 +29,12 @@ export default function StockList() {
     const user = auth.currentUser
     if (!user) return
 
-    const userStocksRef = collection(db, 'users', user.uid, 'stocks')
+    const stockRef = collection(db, 'users', user.uid, 'addstock')
 
-    const unsubscribe = onSnapshot(userStocksRef, snapshot => {
+    const unsubscribe = onSnapshot(stockRef, snapshot => {
       const stockList: Stock[] = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as Stock[]
       setStocks(stockList)
     })
@@ -51,7 +53,7 @@ export default function StockList() {
     const confirm = window.confirm('Are you sure you want to delete this stock record?')
     if (!confirm) return
 
-    await deleteDoc(doc(db, 'users', user.uid, 'stocks', id))
+    await deleteDoc(doc(db, 'users', user.uid, 'addstock', id))
     alert('Stock record deleted')
   }
 
@@ -63,60 +65,62 @@ export default function StockList() {
         <p className="text-gray-400">No stock records yet.</p>
       ) : (
         <div className="space-y-4">
-          {stocks.map(stock => (
-            <div
-              key={stock.id}
-              className="rounded-lg shadow-md bg-white hover:shadow-lg transition duration-300 p-4 border-l-4 border-green-500"
-              onClick={() => handleToggleExpand(stock.id)}
-            >
-              <div className="flex justify-between items-center cursor-pointer">
-                <div>
-                  <h3 className="text-lg font-semibold">{stock.supplierName}</h3>
-                  <p className="text-sm text-gray-600">
-                    Total: Rs. {stock.total?.toFixed(2)}
-                  </p>
+          {stocks
+            .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds) // latest first
+            .map(stock => (
+              <div
+                key={stock.id}
+                className="rounded-lg shadow-md bg-white hover:shadow-lg transition duration-300 p-4 border-l-4 border-green-500"
+                onClick={() => handleToggleExpand(stock.id)}
+              >
+                <div className="flex justify-between items-center cursor-pointer">
+                  <div>
+                    <h3 className="text-lg font-semibold">{stock.supplierName}</h3>
+                    <p className="text-sm text-gray-600">
+                      Total: ${stock.total?.toFixed(2)}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
+                    {stock.createdAt?.toDate
+                      ? new Date(stock.createdAt.toDate()).toLocaleString()
+                      : 'N/A'}
+                  </span>
                 </div>
-                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
-                  {stock.createdAt?.toDate
-                    ? new Date(stock.createdAt.toDate()).toLocaleString()
-                    : 'N/A'}
-                </span>
-              </div>
 
-              {expandedId === stock.id && (
-                <div className="mt-4 border-t pt-4">
-                  <h4 className="font-semibold mb-2">Stocked Items</h4>
-                  <div className="space-y-2">
-                    {stock.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between border p-2 rounded bg-gray-50"
+                {expandedId === stock.id && (
+                  <div className="mt-4 border-t pt-4">
+                    <h4 className="font-semibold mb-2">Stocked Items</h4>
+                    <div className="space-y-2">
+                      {stock.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex justify-between border p-2 rounded bg-gray-50"
+                        >
+                          <span>{item.product_name}</span>
+                          <span>
+                            {item.qty} × ${item.suggested_price_usd.toFixed(2)} ={' '}
+                            <strong>${item.subtotal.toFixed(2)}</strong>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-4">
+                      <button
+                        onClick={e => {
+                          e.stopPropagation()
+                          handleDelete(stock.id)
+                        }}
+                        className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                       >
-                        <span>{item.product_name}</span>
-                        <span>
-                          {item.qty} × Rs.{item.purchase_price.toFixed(2)} ={' '}
-                          <strong>Rs.{item.subtotal.toFixed(2)}</strong>
-                        </span>
-                      </div>
-                    ))}
+                        <FaTrash />
+                        Delete
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="flex justify-end gap-3 mt-4">
-                    <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleDelete(stock.id)
-                      }}
-                      className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      <FaTrash />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
         </div>
       )}
     </div>

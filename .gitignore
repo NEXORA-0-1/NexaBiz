@@ -47,14 +47,34 @@ __pycache__/
 # Backend-specific files
 /backend/node_modules/
 /backend/serviceAccountKey.json
+/backend/gmailServiceKey.json
+/backend/gmailOAuth.json
+/backend/token.json
 /backend/*.log
 /ai/*.log
 /ai/venv/
 /ai/demand_predictor_logs.txt
+/ai/order_optimizer_logs.txt
+/ai/order_generator_logs.txt
+/ai/firebaseKey.json
+
 ai/universal_agent_logs.txt
 ai/supply_checker_logs.txt
+ai/order_generator_logs.txt
+ai/order_optimizer_logs.txt
 
 # IDE/project files
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Ignore all datasets
+ai/datasets/
+
+# Ignore serialized/binary model or data files
+*.pkl
+
+# Ignore Jupyter checkpoint files
+ai/.ipynb_checkpoints/
+
+ai/firebaseKey.json

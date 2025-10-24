@@ -9,6 +9,8 @@ import Home from '../component/home'
 import MyProductpage  from '../component/products/ProductPage'
 import MyInventorypage  from '../component/inventory/InventoryPage'
 import MySupplierPage from '../component/supplier/supplierPage'
+import MyCustomerPage from '../component/customer/CustomerPage'
+import MyMassegePage from '../component/messages/MessagePage'
 
 interface UserData {
   userId: string
@@ -18,7 +20,7 @@ interface UserData {
   approved: boolean
 }
 
-type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'setting'| 'Supplier'
+type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'customer'|  'messages' | 'setting'| 'Supplier'
 
 export default function UserDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -70,8 +72,10 @@ export default function UserDashboard() {
     { label: 'Product', tab: 'product' },
     { label: 'Inventory', tab: 'inventory' },
     { label: 'Finance', tab: 'finance' },
-    {label: 'Supplier', tab: 'Supplier'},
-    { label: 'Setting', tab: 'setting' },
+    {label: 'Customers', tab: 'customer'},
+    {label: 'Suppliers', tab: 'Supplier'},
+    {label: 'Messages', tab: 'messages'},
+    { label: 'Settings', tab: 'setting' },
   ]
 
   // Content for each tab
@@ -101,7 +105,22 @@ export default function UserDashboard() {
             <h2 className="text-xl font-semibold mb-2">Finance</h2>
             <p>This is the Finance page content.</p>
           </div>
-        )
+      )
+
+      case 'customer':
+        return (
+          <div>
+            <MyCustomerPage/>
+          </div>
+      )
+
+      case 'messages':
+        return (
+          <div>
+            <MyMassegePage/>
+          </div>
+      )
+
       case 'setting':
         return (
           <div>
