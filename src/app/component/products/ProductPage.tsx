@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import ProductModal from '../products/ProductModal'
 import MyProductList from '../products/MyProductList'
+import RawMaterialModal from '../products/RawMaterialModal'
 
 export default function ProductPage() {
   const [activeTab, setActiveTab] = useState<'product' | 'raw'>('product')
@@ -63,14 +64,28 @@ export default function ProductPage() {
       )}
 
       {activeTab === 'raw' && (
-        <div className="text-gray-600">
-          <p className="mb-4">Raw materials management will go here.</p>
-          {/* You can later add:
-              <RawMaterialModal /> 
-              <RawMaterialList /> 
-          */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+            >
+              + Add Raw Material
+            </button>
+          </div>
+
+          {/* You can later replace this with <RawMaterialList /> */}
+          <p className="text-gray-600">List of raw materials will go here.</p>
+
+          {showModal && (
+            <RawMaterialModal
+              onClose={() => setShowModal(false)}
+              onSuccess={() => console.log('Added raw material!')}
+            />
+          )}
         </div>
       )}
+
     </div>
   )
 }
