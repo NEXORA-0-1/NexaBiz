@@ -4,6 +4,7 @@ import { useState } from 'react'
 import ProductModal from '../products/ProductModal'
 import MyProductList from '../products/MyProductList'
 import RawMaterialModal from '../products/RawMaterialModal'
+import RawMaterialList from '../products/RawMaterialList'
 
 export default function ProductPage() {
   const [activeTab, setActiveTab] = useState<'product' | 'raw'>('product')
@@ -74,8 +75,7 @@ export default function ProductPage() {
             </button>
           </div>
 
-          {/* You can later replace this with <RawMaterialList /> */}
-          <p className="text-gray-600">List of raw materials will go here.</p>
+          <RawMaterialList />
 
           {showModal && (
             <RawMaterialModal
