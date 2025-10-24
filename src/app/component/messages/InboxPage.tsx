@@ -1,10 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaTrash, FaReply } from 'react-icons/fa'
-import { sanitizeHTML } from '../../../../lib/sanitizeHtml'
+import { FaTrash } from 'react-icons/fa'
+import { getAuth } from "firebase/auth";
 
-
+async function getAuthToken() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+  return user ? await user.getIdToken() : null;
+}
 
 interface Email {
   id: string
@@ -19,8 +23,7 @@ export default function InboxPage() {
   const [emails, setEmails] = useState<Email[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
-  const [replyTo, setReplyTo] = useState<Email | null>(null)
-  const [replyBody, setReplyBody] = useState('')
+  const [aiReply, setAiReply] = useState<{ [id: string]: string }>({})
 
   // Fetch emails from backend API
   const fetchEmails = async () => {
@@ -29,6 +32,7 @@ export default function InboxPage() {
       const res = await fetch('/api/gmail?label=INBOX')
       const data = await res.json()
 
+      // Map backend email data to Email type
       const mappedEmails: Email[] = data.map((email: any) => ({
         id: email.id,
         from: email.from,
@@ -65,39 +69,59 @@ export default function InboxPage() {
     setEmails(prev => prev.filter(email => email.id !== id))
   }
 
-  const handleReply = (email: Email) => {
-    setReplyTo(email)
-  }
+  // === Generate AI Reply ===
+  const handleAIReply = async (email: Email) => {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch("http://localhost:3001/api/ai-reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
 
-  const handleSendReply = async () => {
-    if (!replyTo || !replyBody.trim()) return
+      const data = await res.json();
+      if (data.error) {
+        alert("AI Error: " + data.error);
+      } else {
+        setAiReply(prev => ({ ...prev, [email.id]: data.reply }));
+      }
+    } catch (err) {
+      console.error("AI reply fetch failed:", err);
+      alert("Failed to generate AI reply");
+    }
+  };
+
+  // === Send Reply via Gmail ===
+  const handleSendReply = async (email: Email) => {
+    const replyText = aiReply[email.id];
+    if (!replyText) return alert("No AI reply generated!");
 
     try {
-      const res = await fetch('/api/gmail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("http://localhost:3001/api/gmail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: replyTo.from,
-          subject: `Re: ${replyTo.subject}`,
-          body: replyBody,
-          threadId: replyTo.id,
+          to: email.from,
+          subject: "Re: " + email.subject,
+          body: replyText,
         }),
-      })
+      });
 
-      const data = await res.json()
-
-      if (res.ok && data.success) {
-        alert('✅ Reply sent successfully!')
-        setReplyBody('')
-        setReplyTo(null)
+      const data = await res.json();
+      if (data.success) {
+        alert("✅ Reply sent successfully!");
+        setAiReply(prev => ({ ...prev, [email.id]: "" })); // clear after sending
       } else {
-        alert(`❌ Failed to send reply: ${data.error || 'Unknown error'}`)
+        alert("❌ Failed to send: " + data.error);
       }
-    } catch (error) {
-      console.error('Error sending reply:', error)
-      alert('❌ Failed to send reply')
+    } catch (err) {
+      console.error("Send reply failed:", err);
+      alert("Failed to send email");
     }
-  }
+  };
 
   if (loading) return <p className="text-gray-500">Loading emails...</p>
 
@@ -132,64 +156,54 @@ export default function InboxPage() {
                     {/* ✅ Safely render sanitized HTML */}
                     <div dangerouslySetInnerHTML={{ __html: email.body }} />
 
-                    <div className="flex gap-3 mt-3">
+                  {/* AI Suggested Reply Section */}
+                  {aiReply[email.id] && (
+                    <div className="mt-3 p-3 bg-gray-100 rounded-md border">
+                      <h4 className="font-semibold text-sm mb-1 text-gray-700">
+                        🤖 AI Suggested Reply:
+                      </h4>
+                      <div
+                        className="text-sm"
+                        dangerouslySetInnerHTML={{ __html: aiReply[email.id] }}
+                      />
                       <button
-                        onClick={e => {
-                          e.stopPropagation()
-                          handleReply(email)
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSendReply(email);
                         }}
-                        className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                        className="mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                       >
-                        <FaReply /> Reply
-                      </button>
-
-                      <button
-                        onClick={e => {
-                          e.stopPropagation()
-                          handleDelete(email.id)
-                        }}
-                        className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                      >
-                        <FaTrash /> Delete
+                        Send Reply
                       </button>
                     </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                  )}
 
-      {/* ✅ Reply Modal */}
-      {replyTo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-2">
-              Reply to: {replyTo.from}
-            </h2>
-            <textarea
-              value={replyBody}
-              onChange={e => setReplyBody(e.target.value)}
-              className="w-full border rounded p-2 mb-3"
-              rows={5}
-              placeholder="Type your reply..."
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
-                onClick={() => setReplyTo(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                onClick={handleSendReply}
-              >
-                Send
-              </button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mt-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAIReply(email);
+                      }}
+                      className="flex items-center gap-1 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      🤖 Generate Reply
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(email.id);
+                      }}
+                      className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          ))}
         </div>
       )}
     </div>

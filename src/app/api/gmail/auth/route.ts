@@ -8,11 +8,19 @@ export async function GET() {
   const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
   const { client_secret, client_id, redirect_uris } = credentials.web;
 
-  const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+  const oAuth2Client = new google.auth.OAuth2(
+    client_id,
+    client_secret,
+    redirect_uris[0]
+  );
 
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: ["https://www.googleapis.com/auth/gmail.readonly"],
+    scope: [
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/gmail.send",
+      "https://www.googleapis.com/auth/gmail.compose",
+    ],
   });
 
   return NextResponse.redirect(authUrl);

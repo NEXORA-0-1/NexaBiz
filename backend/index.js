@@ -6,6 +6,9 @@ const axios = require('axios');
 const { body, validationResult } = require('express-validator');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
+const { google } = require("googleapis");
+const fs = require("fs");
+const path = require("path");
 
 dotenv.config();
 
@@ -178,3 +181,99 @@ app.get('/api/findContacts', async (req, res) => {
 app.listen(process.env.PORT || 3001, () =>
   console.log(`Backend running on port ${process.env.PORT || 3001}`)
 );
+
+// -------------------- AI AUTO-REPLY ROUTE --------------------
+app.post('/api/ai-reply', authenticate, async (req, res) => {
+  const { email } = req.body; // { from, subject, body }
+  if (!email || !email.body) {
+    return res.status(400).json({ error: 'Missing email data' });
+  }
+
+  const userId = req.user.uid;
+
+  try {
+    // --- Fetch data from Firestore ---
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
+    const stock_data = productsSnap.docs.map(doc => doc.data());
+
+    const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
+    const transaction_data = transactionsSnap.docs.map(doc => doc.data());
+
+    // --- Send to Python AI ---
+    const aiResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
+      email,
+      stock_data,
+      transaction_data
+    });
+
+    return res.json({ reply: aiResponse.data.reply });
+  } catch (err) {
+    console.error('AI Reply Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/gmail/send", async (req, res) => {
+  try {
+    const { to, subject, body } = req.body;
+    if (!to || !subject || !body)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const credentialsPath = path.join(__dirname, 'gmailOAuth.json');
+    const tokenPath = path.join(__dirname, 'token.json');
+
+    const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
+    const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+
+    const { client_secret, client_id, redirect_uris } = credentials.web;
+    const oAuth2Client = new google.auth.OAuth2(
+      client_id,
+      client_secret,
+      redirect_uris[0]
+    );
+    oAuth2Client.setCredentials(token);
+
+    const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+
+    // --- Clean and format AI HTML ---
+    let cleanBody = body
+      .replace(/```html|```/g, "")       // remove markdown fences
+      .replace(/\n{2,}/g, "\n")          // collapse extra blank lines
+      .trim();
+
+    // If the AI text doesn’t already have <p> tags, wrap it
+    if (!/<p>/i.test(cleanBody)) {
+      cleanBody = cleanBody
+        .split(/\n+/)
+        .map(line => `<p>${line.trim()}</p>`)
+        .join("\n");
+    }
+
+    const rawMessage = [
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/html; charset=utf-8`,
+      "",
+      cleanBody,
+    ]
+      .join("\n")
+      .trim();
+
+
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    await gmail.users.messages.send({
+      userId: "me",
+      resource: { raw: encodedMessage },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Gmail send error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
