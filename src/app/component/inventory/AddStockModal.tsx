@@ -7,8 +7,10 @@ import {
   collection,
   doc,
   getDocs,
+  query,
+  where,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
 } from 'firebase/firestore'
 
 import supplierData from '@/src/data/supplierDummy.json'
@@ -20,17 +22,19 @@ type Props = {
 
 type Product = {
   id: string
-  pid: string
-  name: string
-  qty: number
-  purchase_price: number
+  product_id: string
+  product_name: string
+  stock_amount: number
+  suggested_price_usd: number
+  material_id?: string
+  material_per_unit_kg?: number
 }
 
 type ItemRow = {
   productId: string
   pid: string
   product_name: string
-  purchase_price: number
+  suggested_price_usd: number
   qty: number
 }
 
@@ -38,8 +42,9 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
   const [supplierName, setSupplierName] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<ItemRow[]>([])
-  const allSuppliers = supplierData as string[];
+  const allSuppliers = supplierData as string[]
 
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       const user = auth.currentUser
@@ -48,10 +53,12 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
       const snap = await getDocs(collection(db, 'users', user.uid, 'products'))
       const productList: Product[] = snap.docs.map(d => ({
         id: d.id,
-        pid: d.data().pid,
-        name: d.data().name,
-        qty: Number(d.data().qty || 0),
-        purchase_price: Number(d.data().purchase_price || 0)
+        product_id: d.data().product_id,
+        product_name: d.data().product_name,
+        stock_amount: Number(d.data().stock_amount || 0),
+        suggested_price_usd: Number(d.data().suggested_price_usd || 0),
+        material_id: d.data().material_id,
+        material_per_unit_kg: Number(d.data().material_per_unit_kg || 0),
       }))
       setProducts(productList)
     }
@@ -59,7 +66,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
   }, [])
 
   const handleAddRow = () => {
-    setItems([...items, { productId: '', pid: '', product_name: '', purchase_price: 0, qty: 1 }])
+    setItems([...items, { productId: '', pid: '', product_name: '', suggested_price_usd: 0, qty: 1 }])
   }
 
   const handleSelectProduct = (index: number, productId: string) => {
@@ -68,10 +75,10 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
     const updated = [...items]
     updated[index] = {
       productId: product.id,
-      pid: product.pid,
-      product_name: product.name,
-      purchase_price: product.purchase_price,
-      qty: updated[index]?.qty || 1
+      pid: product.product_id,
+      product_name: product.product_name,
+      suggested_price_usd: product.suggested_price_usd,
+      qty: updated[index]?.qty || 1,
     }
     setItems(updated)
   }
@@ -84,11 +91,11 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
 
   const handlePriceChange = (index: number, price: string) => {
     const updated = [...items]
-    updated[index].purchase_price = Math.max(0, Number(price))
+    updated[index].suggested_price_usd = Math.max(0, Number(price))
     setItems(updated)
   }
 
-  const totalAmount = items.reduce((sum, i) => sum + i.qty * i.purchase_price, 0)
+  const totalAmount = items.reduce((sum, i) => sum + i.qty * i.suggested_price_usd, 0)
 
   const handleSaveStock = async () => {
     const user = auth.currentUser
@@ -110,31 +117,51 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
       }
       const mergedItems = Array.from(mergedMap.values())
 
-      // Update Firestore
       for (const item of mergedItems) {
-        const productRef = doc(db, 'users', user.uid, 'products', item.productId)
-        const productSnap = products.find(p => p.id === item.productId)
-        if (!productSnap) continue
+        const product = products.find(p => p.id === item.productId)
+        if (!product) continue
 
+        const productRef = doc(db, 'users', user.uid, 'products', item.productId)
+
+        // 1️⃣ Increase product stock
         await updateDoc(productRef, {
-          qty: (productSnap.qty || 0) + item.qty,
-          purchase_price: item.purchase_price
+          stock_amount: (product.stock_amount || 0) + item.qty,
         })
+
+        // 2️⃣ Deduct material if product has a material_id
+        if (product.material_id) {
+          const materialQuery = query(
+            collection(db, 'users', user.uid, 'materials'),
+            where('material_id', '==', product.material_id)
+          )
+          const materialSnap = await getDocs(materialQuery)
+          if (materialSnap.empty) {
+            console.warn(`Material not found for ID: ${product.material_id}`)
+          } else {
+            const materialDoc = materialSnap.docs[0]
+            const materialData = materialDoc.data()
+            const currentQty = Number(materialData.qty_kg || 0)
+            const usedMaterial = item.qty * (product.material_per_unit_kg || 0)
+            const newQty = Math.max(0, currentQty - usedMaterial)
+            await updateDoc(materialDoc.ref, { qty_kg: newQty })
+            console.log(`Deducted ${usedMaterial}kg from material ${product.material_id}`)
+          }
+        }
       }
 
-      // Add stock transaction
-      const stockRef = collection(db, 'users', user.uid, 'stocks')
+      // 3️⃣ Record stock transaction
+      const stockRef = collection(db, 'users', user.uid, 'addstock')
       await addDoc(stockRef, {
         supplierName,
         items: mergedItems.map(i => ({
           pid: i.pid,
           product_name: i.product_name,
-          purchase_price: i.purchase_price,
+          suggested_price_usd: i.suggested_price_usd,
           qty: i.qty,
-          subtotal: i.qty * i.purchase_price
+          subtotal: i.qty * i.suggested_price_usd,
         })),
-        total: mergedItems.reduce((sum, i) => sum + i.qty * i.purchase_price, 0),
-        createdAt: new Date()
+        total: totalAmount,
+        createdAt: serverTimestamp(),
       })
 
       alert('✅ Stock added successfully!')
@@ -165,12 +192,11 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
           ))}
         </select>
 
-
         <table className="w-full border mb-3">
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 border">Product</th>
-              <th className="p-2 border">Purchase Price</th>
+              <th className="p-2 border">Selling price</th>
               <th className="p-2 border">Qty</th>
               <th className="p-2 border">Subtotal</th>
             </tr>
@@ -187,7 +213,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
                     <option value="">Select Product</option>
                     {products.map(p => (
                       <option key={p.id} value={p.id}>
-                        {p.name} (Stock: {p.qty})
+                        {p.product_name} (Stock: {p.stock_amount})
                       </option>
                     ))}
                   </select>
@@ -196,7 +222,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
                   <input
                     type="number"
                     min={0}
-                    value={i.purchase_price}
+                    value={i.suggested_price_usd}
                     onChange={e => handlePriceChange(idx, e.target.value)}
                     className="border px-2 py-1 rounded w-full"
                   />
@@ -211,7 +237,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
                   />
                 </td>
                 <td className="p-2 border text-right">
-                  {(i.qty * i.purchase_price).toFixed(2)}
+                  {(i.qty * i.suggested_price_usd).toFixed(2)}
                 </td>
               </tr>
             ))}
@@ -226,7 +252,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
         </button>
 
         <div className="flex justify-end text-lg font-semibold mb-4">
-          Total Bill: Rs. {totalAmount.toFixed(2)}
+          Total Bill: ${totalAmount.toFixed(2)}
         </div>
 
         <div className="flex justify-end gap-3">
