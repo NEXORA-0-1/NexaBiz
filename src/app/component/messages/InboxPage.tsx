@@ -78,6 +78,7 @@ export default function InboxPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+
         },
         body: JSON.stringify({ email }),
       });
@@ -131,30 +132,25 @@ export default function InboxPage() {
         <p className="text-gray-500">No emails in inbox.</p>
       ) : (
         <div className="space-y-4">
-          {emails.map(email => {
-            // ✅ Sanitize email body before rendering
-            const safeBody = sanitizeHTML(email.body || '')
-
-            return (
-              <div
-                key={email.id}
-                className={`rounded-lg shadow-md p-4 border-l-4 transition duration-300 cursor-pointer
-                  ${email.read ? 'border-gray-300 bg-gray-50' : 'border-blue-500 bg-white hover:shadow-lg'}
-                `}
-                onClick={() => handleToggleExpand(email.id)}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold text-lg">{email.subject}</h3>
-                    <p className="text-sm text-gray-600">From: {email.from}</p>
-                  </div>
-                  <span className="text-xs text-gray-400">{email.date}</span>
+          {emails.map(email => (
+            <div
+              key={email.id}
+              className={`rounded-lg shadow-md p-4 border-l-4 transition duration-300 cursor-pointer
+                ${email.read ? 'border-gray-300 bg-gray-50' : 'border-blue-500 bg-white hover:shadow-lg'}
+              `}
+              onClick={() => handleToggleExpand(email.id)}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold text-lg">{email.subject}</h3>
+                  <p className="text-sm text-gray-600">From: {email.from}</p>
                 </div>
+                <span className="text-xs text-gray-400">{email.date}</span>
+              </div>
 
-                {expandedId === email.id && (
-                  <div className="mt-4 border-t pt-4 space-y-2 text-gray-700">
-                    {/* ✅ Safely render sanitized HTML */}
-                    <div dangerouslySetInnerHTML={{ __html: email.body }} />
+              {expandedId === email.id && (
+                <div className="mt-4 border-t pt-4 space-y-2 text-gray-700">
+                  <p>{email.body}</p>
 
                   {/* AI Suggested Reply Section */}
                   {aiReply[email.id] && (
@@ -206,6 +202,6 @@ export default function InboxPage() {
           ))}
         </div>
       )}
-    </div>
-  )
+    </div>
+  )
 }
