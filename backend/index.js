@@ -4,6 +4,11 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const axios = require('axios');
 const { body, validationResult } = require('express-validator');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+const { google } = require("googleapis");
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 
@@ -15,7 +20,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Auth middleware
+// -------------------- AUTH MIDDLEWARE --------------------
 const authenticate = async (req, res, next) => {
   const idToken = req.headers.authorization?.split('Bearer ')[1];
   if (!idToken) return res.status(401).json({ error: 'Unauthorized' });
@@ -28,6 +33,7 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+// -------------------- FORECAST ROUTE --------------------
 app.post('/api/forecast', authenticate, [
   body('query').trim().escape()
 ], async (req, res) => {
@@ -36,16 +42,10 @@ app.post('/api/forecast', authenticate, [
 
   const { query } = req.body;
   const userId = req.user.uid;
-  console.log('Received query:', query, 'User ID:', userId); // debug
+  console.log('Received query:', query, 'User ID:', userId);
 
   try {
-    // --- Fetch stock data from products collection ---
-    const productsSnap = await db
-      .collection('users')
-      .doc(userId)
-      .collection('products')
-      .get();
-
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
     const stock_data = productsSnap.docs.map(doc => {
       const data = doc.data();
       return {
@@ -57,9 +57,6 @@ app.post('/api/forecast', authenticate, [
       };
     });
 
-    console.log("✅ Final stock_data being sent to AI:", JSON.stringify(stock_data, null, 2));
-
-    // --- Fetch transaction data ---
     const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
     const transaction_data = transactionsSnap.docs.map(doc => {
       const data = doc.data();
@@ -77,20 +74,261 @@ app.post('/api/forecast', authenticate, [
       };
     });
 
-    console.log("✅ Transaction data being sent to AI:", JSON.stringify(transaction_data, null, 2));
-
-    // --- Call Python AI Agent ---
     const agentResponse = await axios.post('http://127.0.0.1:5001/ai', {
       query,
       stock_data,
       transaction_data
     });
 
+    console.log("✅ AI agent response received");
+
     res.json(agentResponse.data);
   } catch (error) {
-    console.error('❌ AI agent error:', error.message); // debug
+    console.error('❌ AI agent error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(process.env.PORT || 3001, () => console.log(`Backend on port ${process.env.PORT || 3001}`));
+// ========================================================
+// NEW SECTION — FIND CONTACTS API
+// ========================================================
+
+// Helper functions
+const delay = ms => new Promise(res => setTimeout(res, ms));
+const emailRe = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+const phoneRe = /((?:\+94|0)?\s?\d{2,3}[-\s]?\d{3}[-\s]?\d{3,4}|\+?\d{7,15})/g;
+
+async function ddgSearchFirstUrl(query) {
+  const url = 'https://html.duckduckgo.com/html?q=' + encodeURIComponent(query);
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+  const text = await res.text();
+  const $ = cheerio.load(text);
+  const link = $('a.result__a').first().attr('href');
+  return link || null;
+}
+
+async function fetchAndExtract(url) {
+  if (!url) return { emails: [], phones: [] };
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 });
+    const text = await res.text();
+    const $ = cheerio.load(text);
+    const bodyText = $('body').text();
+
+    const emails = [
+      ...new Set([
+        ...(bodyText.match(emailRe) || []),
+        ...$('a[href^="mailto:"]').map((i, el) => $(el).attr('href').replace(/^mailto:/i, '').trim()).get(),
+      ])
+    ];
+
+    const phones = [
+      ...new Set([
+        ...(bodyText.match(phoneRe) || []),
+        ...$('a[href^="tel:"]').map((i, el) => $(el).attr('href').replace(/^tel:/i, '').trim()).get(),
+      ])
+    ];
+
+    return { emails, phones };
+  } catch (err) {
+    console.warn('Fetch error:', url, err.message);
+    return { emails: [], phones: [] };
+  }
+}
+
+// -------------------- FIND CONTACTS ROUTE --------------------
+app.get('/api/findContacts', async (req, res) => {
+  try {
+    const names = [
+      'NOLIMIT Glitz Colombo',
+      'Malaka Trade Center Wellawatte Colombo',
+    ];
+
+    const results = [];
+    for (const name of names) {
+      console.log('🔍 Searching:', name);
+      const firstUrl = await ddgSearchFirstUrl(name + ' contact phone email Sri Lanka');
+      console.log('🌐 Found URL:', firstUrl);
+      const contact = await fetchAndExtract(firstUrl);
+      results.push({ name, url: firstUrl, emails: contact.emails, phones: contact.phones });
+      await delay(1500);
+    }
+
+    const filtered = results.filter(r => r.emails.length > 0 || r.phones.length > 0);
+    res.json(filtered);
+  } catch (err) {
+    console.error('❌ FindContacts Error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ========================================================
+
+// -------------------- AI AUTO-REPLY ROUTE WITH AUTO ORDER --------------------
+app.post('/api/ai-reply', authenticate, async (req, res) => {
+  const { email } = req.body; // { from, subject, body }
+  if (!email || !email.body) return res.status(400).json({ error: 'Missing email data' });
+
+  const userId = req.user.uid;
+
+  try {
+    // --- Fetch stock & transactions ---
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
+    const stock_data = productsSnap.docs.map(doc => doc.data());
+
+    const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
+    const transaction_data = transactionsSnap.docs.map(doc => doc.data());
+
+    // --- Call AI to detect order or reply ---
+    const aiResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
+      email,
+      stock_data,
+      transaction_data
+    });
+
+    // --- If AI detected order, process it ---
+    if (aiResponse.data.orderDetected) {
+      const orderResponse = await axios.post(`${req.protocol}://${req.get('host')}/api/processOrder`, {
+        customer_name: aiResponse.data.customer_name,
+        items: aiResponse.data.items
+      }, { headers: { Authorization: req.headers.authorization } });
+
+      // --- Send processed order back to AI for confirmation message ---
+      const confirmationResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
+        email: {
+          from: email.from,
+          subject: "Order Confirmation",
+          body: "Here are your order details"
+        },
+        stock_data,
+        transaction_data,
+        processedOrder: orderResponse.data
+      });
+
+      return res.json({ reply: confirmationResponse.data.reply });
+    }
+
+    return res.json({ reply: aiResponse.data.reply });
+  } catch (err) {
+    console.error('AI Reply Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- PROCESS ORDER ROUTE --------------------
+app.post('/api/processOrder', authenticate, async (req, res) => {
+  const { customer_name, items, createdAt } = req.body;
+  if (!customer_name || !items || items.length === 0) return res.status(400).json({ error: "Invalid order data" });
+
+  const userId = req.user.uid;
+
+  try {
+    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
+    const productsMap = new Map();
+    productsSnap.docs.forEach(doc => {
+      const d = doc.data();
+      productsMap.set(d.product_name.toLowerCase(), { id: doc.id, stock: Number(d.stock_amount || 0), selling_price: Number(d.suggested_price_usd || 0), pid: d.product_id || "" });
+    });
+
+    const transactionItems = [];
+    const outOfStock = [];
+
+    const mergedMap = new Map();
+    items.forEach(item => {
+      const key = item.product_name.toLowerCase();
+      const prevQty = mergedMap.get(key) || 0;
+      mergedMap.set(key, prevQty + Number(item.qty || 0));
+    });
+
+    const tid = 'TID' + Math.random().toString(36).substring(2, 12).toUpperCase();
+    const userTransactionsRef = db.collection('users').doc(userId).collection('transactions');
+
+    await db.runTransaction(async (tx) => {
+      const productRefs = [];
+      const productUpdates = [];
+
+      mergedMap.forEach((qty, name) => {
+        if (!productsMap.has(name)) {
+          outOfStock.push(name);
+          return;
+        }
+        const prod = productsMap.get(name);
+        if (qty > prod.stock) {
+          outOfStock.push(name);
+        } else {
+          transactionItems.push({
+            pid: prod.pid,
+            product_name: name,
+            selling_price: prod.selling_price,
+            qty,
+            discount: 0,
+            subtotal: prod.selling_price * qty,
+            discounted_subtotal: prod.selling_price * qty
+          });
+          productRefs.push(db.collection('users').doc(userId).collection('products').doc(prod.id));
+          productUpdates.push(prod.stock - qty);
+        }
+      });
+
+      productRefs.forEach((ref, idx) => {
+        tx.update(ref, { stock_amount: productUpdates[idx] });
+      });
+
+      if (transactionItems.length > 0) {
+        const newTxRef = userTransactionsRef.doc();
+        tx.set(newTxRef, {
+          tid,
+          cus_name: customer_name,
+          items: transactionItems,
+          total_amount: transactionItems.reduce((s, i) => s + i.discounted_subtotal, 0),
+          createdAt: createdAt ? new Date(createdAt) : new Date()
+        });
+      }
+    });
+
+    res.json({ tid, customer_name, transactionItems, outOfStock });
+  } catch (err) {
+    console.error("Order processing error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- GMAIL SEND --------------------
+app.post("/api/gmail/send", async (req, res) => {
+  try {
+    const { to, subject, body } = req.body;
+    if (!to || !subject || !body)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const credentialsPath = path.join(__dirname, 'gmailOAuth.json');
+    const tokenPath = path.join(__dirname, 'token.json');
+
+    const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
+    const token = JSON.parse(fs.readFileSync(tokenPath, "utf-8"));
+
+    const { client_secret, client_id, redirect_uris } = credentials.web;
+    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+    oAuth2Client.setCredentials(token);
+
+    const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
+
+    let cleanBody = body.replace(/```html|```/g, "").replace(/\n{2,}/g, "\n").trim();
+    if (!/<p>/i.test(cleanBody)) {
+      cleanBody = cleanBody.split(/\n+/).map(line => `<p>${line.trim()}</p>`).join("\n");
+    }
+
+    const rawMessage = [`To: ${to}`, `Subject: ${subject}`, `Content-Type: text/html; charset=utf-8`, "", cleanBody].join("\n").trim();
+
+    const encodedMessage = Buffer.from(rawMessage).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+    await gmail.users.messages.send({ userId: "me", resource: { raw: encodedMessage } });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Gmail send error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------- START SERVER --------------------
+app.listen(process.env.PORT || 3001, () => console.log(`Backend running on port ${process.env.PORT || 3001}`));

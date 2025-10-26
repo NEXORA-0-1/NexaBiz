@@ -6,6 +6,9 @@ import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
 import { FaTrash, FaEdit } from 'react-icons/fa'
 // import EditCustomerModal from './EditCustomerModal' // You’ll build this similar to EditProductModal
 
+
+
+
 export default function MyCustomerList() {
   const [customers, setCustomers] = useState<any[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -73,6 +76,9 @@ export default function MyCustomerList() {
                 <div className="mt-4 border-t pt-4 space-y-1">
                   <p>
                     <strong>Customer ID:</strong> {customer.customer_id}
+                  </p>
+                  <p>
+                    <strong>Customer Email:</strong> {customer.email}
                   </p>
                   <p>
                     <strong>Business Type:</strong> {customer.business_type}

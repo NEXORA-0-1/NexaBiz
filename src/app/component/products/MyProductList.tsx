@@ -8,9 +8,28 @@ import EditProductModal from './EditProductModal'
 
 export default function MyProductList() {
   const [products, setProducts] = useState<any[]>([])
+  const [materials, setMaterials] = useState<any[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingProduct, setEditingProduct] = useState<any | null>(null)
 
+  // ✅ Fetch materials (for name lookup)
+  useEffect(() => {
+    const user = auth.currentUser
+    if (!user) return
+
+    const userMaterialsRef = collection(db, 'users', user.uid, 'materials')
+    const unsubscribe = onSnapshot(userMaterialsRef, snapshot => {
+      const materialList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      setMaterials(materialList)
+    })
+
+    return () => unsubscribe()
+  }, [])
+
+  // ✅ Fetch products
   useEffect(() => {
     const user = auth.currentUser
     if (!user) return
@@ -20,7 +39,7 @@ export default function MyProductList() {
     const unsubscribe = onSnapshot(userProductsRef, snapshot => {
       const productList = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }))
       setProducts(productList)
     })
@@ -41,6 +60,12 @@ export default function MyProductList() {
 
     await deleteDoc(doc(db, 'users', user.uid, 'products', id))
     alert('Product deleted')
+  }
+
+  // ✅ Helper: Find material name by material_id
+  const getMaterialName = (material_id: string) => {
+    const material = materials.find(m => m.material_id === material_id)
+    return material ? material.material_name : material_id || 'Unknown'
   }
 
   const formatPrice = (price: number) => `$${price.toFixed(2)}`
@@ -87,7 +112,7 @@ export default function MyProductList() {
                     <strong>Category:</strong> {product.category}
                   </p>
                   <p>
-                    <strong>Material:</strong> {product.material_type}
+                    <strong>Material:</strong> {getMaterialName(product.material_id)}
                   </p>
                   <p>
                     <strong>Material per Unit:</strong> {product.material_per_unit_kg} kg
