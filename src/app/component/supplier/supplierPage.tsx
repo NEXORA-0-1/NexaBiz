@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import AddSupplierModal from './addSupplierModel'
 import MySupplierList from './supplierList'
+import SupplierReplies from './supplierReplies';
 // import FindSupplier from './FindSupplier' // optional (future)
 
 export default function SupplierPage() {
-  const [activeTab, setActiveTab] = useState<'add' | 'find'>('add')
+  const [activeTab, setActiveTab] = useState<'add' | 'replies'>('add')
   const [showModal, setShowModal] = useState(false)
   const [refresh, setRefresh] = useState(false)
 
@@ -30,14 +31,14 @@ export default function SupplierPage() {
           Add Supplier
         </button>
         <button
-          onClick={() => setActiveTab('find')}
+          onClick={() => setActiveTab('replies')}
           className={`pb-2 px-4 font-semibold border-b-2 transition-colors duration-200 ${
-            activeTab === 'find'
+            activeTab === 'replies'
               ? 'border-green-500 text-green-600'
               : 'border-transparent text-gray-600 hover:text-green-500'
           }`}
         >
-          Find Supplier
+        Supplier Replies
         </button>
       </div>
 
@@ -67,10 +68,9 @@ export default function SupplierPage() {
         </div>
       )}
 
-      {activeTab === 'find' && (
+      {activeTab === 'replies' && (
         <div className="p-6">
-          {/* Add your FindSupplier component here later */}
-          <p className="text-gray-600 italic">Find Supplier feature coming soon...</p>
+          <SupplierReplies />
         </div>
       )}
     </div>
