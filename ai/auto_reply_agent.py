@@ -182,8 +182,9 @@ def auto_reply():
     {'The customer wants to order the following items: ' + json.dumps(order_items) if order_detected else 'No order detected.'}
 
     Write a polite, natural **HTML email** with short readable paragraphs (<p> tags).
-    ❌ Do NOT use ```html or markdown formatting.
-    ✅ Only return clean HTML paragraph structure (<p>...</p>).
+    Return **only raw HTML**, with <p> tags and <br> for line breaks.
+    Do NOT include ```html, markdown, or backticks in your reply.
+    Your entire response must start with <p> and contain no markdown fences.
     """
 
     # If backend has processed the order, include confirmation
