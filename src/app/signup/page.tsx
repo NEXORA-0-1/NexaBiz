@@ -128,63 +128,68 @@ export default function Signup() {
             </div>
 
            {/* Password Input */}
-            <div className="relative">
-              {/* Lock Icon */}
-              <div
-                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
-                  focusedField === "password" ? "text-cyan-400" : "text-gray-400"
-                }`}
-              >
-                <Lock className="w-5 h-5" />
-              </div>
+<div className="flex flex-col">
+  <div
+    className={`relative flex items-center rounded-xl border-2 transition-all duration-300 bg-gray-700 ${
+      focusedField === "password"
+        ? "border-cyan-500 shadow-lg shadow-cyan-800"
+        : "border-gray-600 hover:border-gray-500"
+    }`}
+  >
+    {/* Lock Icon */}
+    <div
+      className={`flex-shrink-0 ml-4 text-gray-400 transition-colors duration-300 ${
+        focusedField === "password" ? "text-cyan-400" : "text-gray-400"
+      }`}
+    >
+      <Lock className="w-5 h-5" />
+    </div>
 
-              {/* Input */}
-              <input
-                className={`w-full pl-12 pr-12 py-3.5 rounded-xl border-2 transition-all duration-300 focus:outline-none bg-gray-700 text-white ${
-                  focusedField === "password"
-                    ? "border-cyan-500 shadow-lg shadow-cyan-800"
-                    : "border-gray-600 hover:border-gray-500"
-                }`}
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setFocusedField("password")}
-                onBlur={() => setFocusedField("")}
-                value={password}
-              />
+    {/* Input */}
+    <input
+      className="flex-1 bg-transparent outline-none py-3.5 px-4 text-white placeholder-gray-400"
+      type={showPassword ? "text" : "password"}
+      placeholder="Password"
+      onChange={(e) => setPassword(e.target.value)}
+      onFocus={() => setFocusedField("password")}
+      onBlur={() => setFocusedField("")}
+      value={password}
+    />
 
-              {/* Eye Icon */}
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors z-10"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+    {/* Eye Icon */}
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="flex-shrink-0 mr-4 text-gray-400 hover:text-cyan-400 transition-colors"
+    >
+      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+    </button>
+  </div>
 
-              {/* Password Strength Indicator */}
-              {password && (
-                <div className="mt-2">
-                  <div className="w-full h-1.5 bg-gray-600 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${
-                        passwordStrength < 33
-                          ? "bg-red-500"
-                          : passwordStrength < 66
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                      }`}
-                      style={{ width: `${passwordStrength}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {passwordStrength < 33 && "Weak password"}
-                    {passwordStrength >= 33 && passwordStrength < 66 && "Medium strength"}
-                    {passwordStrength >= 66 && "Strong password"}
-                  </p>
-                </div>
-              )}
-            </div>
+  {/* Password Strength Indicator */}
+  {password && (
+    <div className="mt-2">
+      <div className="w-full h-1.5 bg-gray-600 rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all duration-500 ${
+            passwordStrength < 33
+              ? "bg-red-500"
+              : passwordStrength < 66
+              ? "bg-yellow-500"
+              : "bg-green-500"
+          }`}
+          style={{ width: `${passwordStrength}%` }}
+        ></div>
+      </div>
+      <p className="text-xs text-gray-400 mt-1">
+        {passwordStrength < 33 && "Weak password"}
+        {passwordStrength >= 33 && passwordStrength < 66 && "Medium strength"}
+        {passwordStrength >= 66 && "Strong password"}
+      </p>
+    </div>
+  )}
+</div>
+
 
 
             {/* Submit Button */}
@@ -220,9 +225,6 @@ export default function Signup() {
           </div>
         </div>
 
-        <p className="text-center text-gray-400 text-sm mt-6 drop-shadow-lg">
-          By signing up, you agree to our Terms of Service and Privacy Policy
-        </p>
       </div>
     </div>
   );

@@ -53,7 +53,6 @@ export default function NexaBizLanding() {
   });
   const [mounted, setMounted] = useState(false);
 
-  // Deterministic particle data (prevents SSR hydration mismatch)
   const [particles] = useState<ParticleProps[]>(() =>
     Array.from({ length: 30 }, () => ({
       delay: Math.random() * 5,
@@ -146,30 +145,17 @@ export default function NexaBizLanding() {
   ];
 
   return (
-    <div className="bg-gray-900 text-white overflow-hidden">
+    <div className="bg-gray-900 text-white overflow-hidden relative">
       <style jsx>{`
         @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0) translateX(0);
-          }
-          50% {
-            transform: translateY(-20px) translateX(10px);
-          }
+          0%, 100% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-20px) translateX(10px); }
         }
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-slideUp {
-          animation: slideUp 0.8s ease-out forwards;
-        }
+        .animate-slideUp { animation: slideUp 0.8s ease-out forwards; }
         .gradient-text {
           background: linear-gradient(135deg, #06b6d4, #3b82f6, #06b6d4);
           background-size: 200% 200%;
@@ -178,13 +164,8 @@ export default function NexaBizLanding() {
           animation: gradientShift 3s ease infinite;
         }
         @keyframes gradientShift {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
         }
         .neon-border {
           box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
@@ -198,11 +179,10 @@ export default function NexaBizLanding() {
 
       {/* Particles Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {mounted &&
-          particles.map((p, i) => <Particle key={i} {...p} />)}
+        {mounted && particles.map((p, i) => <Particle key={i} {...p} />)}
       </div>
 
-      {/* HERO */}
+      {/* HERO Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 opacity-30"
@@ -233,11 +213,13 @@ export default function NexaBizLanding() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link href="/signup" passHref>
-               <button className="group px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-semibold text-lg neon-border flex items-center gap-3">
-                 Get Started
+              {/* Get Started Button redirects to signup page */}
+              <Link
+                href="/signup"
+                className="group px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-semibold text-lg neon-border flex items-center gap-3 inline-flex"
+              >
+                Get Started
                 <ArrowRight className="group-hover:translate-x-2 transition-transform" />
-               </button>
               </Link>
 
               <button className="px-8 py-4 border-2 border-cyan-500/50 rounded-lg font-semibold text-lg hover:bg-cyan-500/10 transition-all flex items-center gap-3">
@@ -249,11 +231,8 @@ export default function NexaBizLanding() {
         </div>
       </section>
 
-      {/* ABOUT */}
-      <section
-        className="py-24 relative"
-        style={{ transform: `translateY(${scrollY * 0.1}px)` }}
-      >
+      {/* ABOUT Section */}
+      <section className="py-24 relative" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
         <div className="container mx-auto px-6 text-center max-w-4xl">
           <h2 className="text-5xl font-bold mb-8 gradient-text">
             The Future of Smart Manufacturing
@@ -264,13 +243,12 @@ export default function NexaBizLanding() {
           </p>
           <p className="text-lg text-gray-400">
             Built on machine learning and analytics, NexaBiz unifies forecasting,
-            supply chain optimization, and automated communication into one
-            ecosystem.
+            supply chain optimization, and automated communication into one ecosystem.
           </p>
         </div>
       </section>
 
-      {/* AGENTS */}
+      {/* AGENTS Section */}
       <section className="py-24 relative">
         <div className="container mx-auto px-6">
           <h2 className="text-5xl font-bold text-center mb-16 gradient-text">
@@ -278,7 +256,7 @@ export default function NexaBizLanding() {
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {agents.map((agent, idx) => {
+            {agents.map((agent) => {
               const Icon = agent.icon;
               return (
                 <div
@@ -293,9 +271,7 @@ export default function NexaBizLanding() {
                     >
                       <Icon size={32} />
                     </div>
-                    <h3 className="text-2xl font-bold mb-4 text-cyan-400">
-                      {agent.title}
-                    </h3>
+                    <h3 className="text-2xl font-bold mb-4 text-cyan-400">{agent.title}</h3>
                     <p className="text-gray-300">{agent.description}</p>
                     {hoveredCard === agent.id && (
                       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-2xl pointer-events-none" />
@@ -308,7 +284,7 @@ export default function NexaBizLanding() {
         </div>
       </section>
 
-      {/* IMPACT */}
+      {/* IMPACT Section */}
       <section ref={statsRef} className="py-24 bg-gray-800/30 relative">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-5xl font-bold mb-16 gradient-text">
@@ -316,23 +292,17 @@ export default function NexaBizLanding() {
           </h2>
           <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
             <div>
-              <div className="text-6xl font-bold text-cyan-400 mb-4">
-                +{countUp.speed}%
-              </div>
+              <div className="text-6xl font-bold text-cyan-400 mb-4">+{countUp.speed}%</div>
               <p className="text-xl text-gray-300">Faster Decisions</p>
               <TrendingUp className="mx-auto mt-4 text-cyan-400" size={32} />
             </div>
             <div>
-              <div className="text-6xl font-bold text-blue-400 mb-4">
-                -{countUp.waste}%
-              </div>
+              <div className="text-6xl font-bold text-blue-400 mb-4">-{countUp.waste}%</div>
               <p className="text-xl text-gray-300">Inventory Waste</p>
               <Shield className="mx-auto mt-4 text-blue-400" size={32} />
             </div>
             <div>
-              <div className="text-6xl font-bold text-teal-400 mb-4">
-                +{countUp.satisfaction}%
-              </div>
+              <div className="text-6xl font-bold text-teal-400 mb-4">+{countUp.satisfaction}%</div>
               <p className="text-xl text-gray-300">Customer Satisfaction</p>
               <Zap className="mx-auto mt-4 text-teal-400" size={32} />
             </div>
@@ -340,7 +310,7 @@ export default function NexaBizLanding() {
         </div>
       </section>
 
-      {/* TECH STACK */}
+      {/* TECH STACK Section */}
       <section className="py-24">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-5xl font-bold mb-16 gradient-text">
@@ -350,9 +320,7 @@ export default function NexaBizLanding() {
             {techStack.map((tech, idx) => (
               <div key={idx} className="group text-center">
                 <div className="w-24 h-24 mx-auto mb-4 bg-gray-800 rounded-xl border border-cyan-500/30 flex items-center justify-center group-hover:scale-110 transition-transform neon-border">
-                  <span className={`text-3xl font-bold ${tech.color}`}>
-                    {tech.name[0]}
-                  </span>
+                  <span className={`text-3xl font-bold ${tech.color}`}>{tech.name[0]}</span>
                 </div>
                 <p className="text-gray-300 font-semibold">{tech.name}</p>
               </div>
@@ -361,19 +329,15 @@ export default function NexaBizLanding() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section
-        className="py-32 relative overflow-hidden"
-        style={{ transform: `translateY(${scrollY * 0.05}px)` }}
-      >
+      {/* CTA Section */}
+      <section className="py-32 relative overflow-hidden" style={{ transform: `translateY(${scrollY * 0.05}px)` }}>
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/40 to-blue-900/40" />
         <div className="container mx-auto px-6 relative z-10 text-center">
           <h2 className="text-6xl md:text-7xl font-bold mb-8 gradient-text">
             Join the Future of Manufacturing
           </h2>
           <p className="text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Transform your operations with AI-driven intelligence. Start
-            optimizing today.
+            Transform your operations with AI-driven intelligence. Start optimizing today.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <button className="px-10 py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg font-bold text-xl neon-border">

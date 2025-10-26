@@ -27,7 +27,7 @@ logging.basicConfig(filename='demand_predictor_logs.txt', level=logging.INFO,
 nlp = spacy.load("en_core_web_sm")
 
 # Flask app
-app = Flask(__name__)
+app = Flask(_name_)
 
 # =========================================================
 # 🧩 Utility Functions
@@ -61,20 +61,29 @@ def get_google_trend_score(product_name: str):
         return 50, 0
 
 def fetch_ai_insight(product, current_stock, forecasted_demand, trend_score, trend_change, price_info, historical_sales):
-    """Generate marketing + stock management insight using Gemini."""
+    """
+    Generate concise, actionable sales + inventory recommendation using Gemini 2.0.
+    Output should be short, structured, and user-friendly.
+    """
+    # Convert historical_sales to simple comma-separated string
+    sales_summary = ", ".join(map(str, historical_sales)) if historical_sales else "No recent data"
+
     prompt = (
-        f"You are a sales forecasting and inventory management assistant.\n"
+        f"You are a sales assistant helping manage inventory, pricing, and marketing.\n"
         f"Product: {product}\n"
         f"Current Stock: {current_stock}\n"
         f"Forecasted Demand (next month): {forecasted_demand}\n"
-        f"Historical Sales (last 3 months): {historical_sales}\n"
+        f"Historical Sales (last 3 months): {sales_summary}\n"
         f"Google Trends Score: {trend_score}/100 (change: {trend_change})\n"
-        f"Base Cost: ${price_info.get('base_cost', '?')}, Suggested Price: ${price_info.get('suggested_price', '?')}\n"
-        f"Please provide a detailed, actionable recommendation on how to manage stock, adjust pricing, "
-        f"and plan promotions or marketing for the next month."
+        f"Base Cost: ${price_info.get('base_cost', '?')}, Suggested Price: ${price_info.get('suggested_price', '?')}\n\n"
+        f"Instructions: Provide a concise, actionable summary with 3 sections:\n"
+        f"1. Stock Management: what to order or adjust\n"
+        f"2. Pricing: any changes or promotions\n"
+        f"3. Marketing: simple, effective steps to increase sales\n"
+        f"Keep it short, easy to read, and suitable for a business user. Use bullet points if helpful."
     )
     try:
-        model_gemini = genai.GenerativeModel("gemini-1.5-flash")
+        model_gemini = genai.GenerativeModel("gemini-2.0-flash-001")
         response = model_gemini.generate_content(prompt)
         return response.text
     except Exception as e:
@@ -228,5 +237,5 @@ def predict_demand():
 # =========================================================
 # 🚀 Run Server
 # =========================================================
-if __name__ == '__main__':
+if _name_ == '_main_':
     app.run(host='0.0.0.0', port=5000, debug=True)
