@@ -30,7 +30,7 @@ export default function Signup() {
       );
     } catch (error) {
       console.error("Signup error:", error);
-      alert(error.message);
+      alert("Failed to sign up.");
     } finally {
       setLoading(false);
     }
