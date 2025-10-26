@@ -153,7 +153,7 @@ def ai_handler():
 
             response = {"readable_text": response_text.strip(), "suppliers": formatted_suppliers,"type": "text"}
 
-        elif "negotiate" in query or "email supplier" in query:
+        elif "negotiate" in query or "send email supplier" in query:
             product_name = query.split("for")[-1].strip() if "for" in query else ""
             user_request = query  # Full query as user intent
             suppliers = get_web_suppliers(product_name) if product_name else []
