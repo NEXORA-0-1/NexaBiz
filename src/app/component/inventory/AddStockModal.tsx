@@ -25,7 +25,7 @@ type Product = {
   product_id: string
   product_name: string
   stock_amount: number
-  suggested_price_usd: number
+  base_cost_usd: number
   material_id?: string
   material_per_unit_kg?: number
 }
@@ -34,7 +34,7 @@ type ItemRow = {
   productId: string
   pid: string
   product_name: string
-  suggested_price_usd: number
+  base_cost_usd: number
   qty: number
 }
 
@@ -56,7 +56,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
         product_id: d.data().product_id,
         product_name: d.data().product_name,
         stock_amount: Number(d.data().stock_amount || 0),
-        suggested_price_usd: Number(d.data().suggested_price_usd || 0),
+        base_cost_usd: Number(d.data().base_cost_usd || 0),
         material_id: d.data().material_id,
         material_per_unit_kg: Number(d.data().material_per_unit_kg || 0),
       }))
@@ -66,7 +66,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
   }, [])
 
   const handleAddRow = () => {
-    setItems([...items, { productId: '', pid: '', product_name: '', suggested_price_usd: 0, qty: 1 }])
+    setItems([...items, { productId: '', pid: '', product_name: '', base_cost_usd: 0, qty: 1 }])
   }
 
   const handleSelectProduct = (index: number, productId: string) => {
@@ -77,7 +77,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
       productId: product.id,
       pid: product.product_id,
       product_name: product.product_name,
-      suggested_price_usd: product.suggested_price_usd,
+      base_cost_usd: product.base_cost_usd,
       qty: updated[index]?.qty || 1,
     }
     setItems(updated)
@@ -91,11 +91,11 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
 
   const handlePriceChange = (index: number, price: string) => {
     const updated = [...items]
-    updated[index].suggested_price_usd = Math.max(0, Number(price))
+    updated[index].base_cost_usd = Math.max(0, Number(price))
     setItems(updated)
   }
 
-  const totalAmount = items.reduce((sum, i) => sum + i.qty * i.suggested_price_usd, 0)
+  const totalAmount = items.reduce((sum, i) => sum + i.qty * i.base_cost_usd, 0)
 
   const handleSaveStock = async () => {
     const user = auth.currentUser
@@ -156,9 +156,9 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
         items: mergedItems.map(i => ({
           pid: i.pid,
           product_name: i.product_name,
-          suggested_price_usd: i.suggested_price_usd,
+          base_cost_usd: i.base_cost_usd,
           qty: i.qty,
-          subtotal: i.qty * i.suggested_price_usd,
+          subtotal: i.qty * i.base_cost_usd,
         })),
         total: totalAmount,
         createdAt: serverTimestamp(),
@@ -196,7 +196,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
           <thead>
             <tr className="bg-gray-100">
               <th className="p-2 border">Product</th>
-              <th className="p-2 border">Selling price</th>
+              <th className="p-2 border">Base cost</th>
               <th className="p-2 border">Qty</th>
               <th className="p-2 border">Subtotal</th>
             </tr>
@@ -222,7 +222,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
                   <input
                     type="number"
                     min={0}
-                    value={i.suggested_price_usd}
+                    value={i.base_cost_usd}
                     onChange={e => handlePriceChange(idx, e.target.value)}
                     className="border px-2 py-1 rounded w-full"
                   />
@@ -237,7 +237,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
                   />
                 </td>
                 <td className="p-2 border text-right">
-                  {(i.qty * i.suggested_price_usd).toFixed(2)}
+                  {(i.qty * i.base_cost_usd).toFixed(2)}
                 </td>
               </tr>
             ))}
