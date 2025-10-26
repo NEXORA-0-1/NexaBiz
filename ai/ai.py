@@ -32,7 +32,7 @@ def run_demand_predictor(query, stock_data, transaction_data):
             "stock_data": stock_data,
             "transaction_data": transaction_data
         }
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=60)
         if response.status_code != 200:
             return {"error": f"demand_predictor returned {response.status_code}: {response.text}"}
         return response.json()
