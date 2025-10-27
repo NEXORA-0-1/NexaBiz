@@ -231,17 +231,20 @@ Nexabiz Procurement Team
 ```
 nexabiz-ai/
 │
-├── backend/
-│   ├── index.js
+├── ai/
+│   ├── ai.py
 │   ├── auto_reply_agent.py
-│   ├── gmailOAuth.json
-│   └── token.json
+│   ├── demand_predictor/
+│   └── supply_checker/
 │
-├── nexabiz-pos/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── pages/
+├── backend/
+│   └── index.js
+│
+├── src/
+│   └── app/
+│       ├── components/
+│       ├── lib/
+│       └── pages/
 │
 ├── dataset/
 │   └── sales_4years.csv
