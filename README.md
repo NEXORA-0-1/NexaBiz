@@ -234,8 +234,8 @@ nexabiz-ai/
 ├── ai/
 │   ├── ai.py
 │   ├── auto_reply_agent.py
-│   ├── demand_predictor/
-│   └── supply_checker/
+│   ├── demand_predictor
+│   └── supply_checker
 │
 ├── backend/
 │   └── index.js
