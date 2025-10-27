@@ -262,16 +262,6 @@ nexabiz-ai/
 
 ---
 
-## 🤝 Contributors
-
-| Name | Role |
-|------|------|
-| **Dinura Sanmith** | Fullstack & AI Engineer |
-| **Kavindya HVS** | ML Research & Data Engineering |
-| **Team Nexabiz** | UI/UX & Integration |
-
----
-
 ## 📜 License
 
 This project is licensed under the MIT License — free for personal and commercial use.
