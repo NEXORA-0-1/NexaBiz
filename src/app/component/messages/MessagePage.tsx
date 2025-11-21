@@ -27,14 +27,14 @@ export default function MessagePage() {
   ]
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
+    <div className="bg-linear-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       {/* Header Section - Not Sticky */}
       <div className="backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           {/* Title & Actions */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+              <div className="p-3 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
                 <FaEnvelope className="text-2xl text-white" />
               </div>
               <div>
@@ -64,8 +64,8 @@ export default function MessagePage() {
                 layoutId="activeTab"
                 className={`absolute inset-y-1.5 rounded-xl shadow-md ${
                   activeTab === 'inbox'
-                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600'
-                    : 'bg-gradient-to-br from-green-500 to-emerald-600'
+                    ? 'bg-linear-to-br from-blue-500 to-indigo-600'
+                    : 'bg-linear-to-br from-green-500 to-emerald-600'
                 }`}
                 initial={false}
                 animate={{
@@ -191,7 +191,7 @@ export default function MessagePage() {
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-8 right-8 p-5 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 z-50 group"
+        className="fixed bottom-8 right-8 p-5 bg-linear-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 z-50 group"
         onClick={() => alert('Compose new email functionality coming soon!')}
       >
         <div className="relative">

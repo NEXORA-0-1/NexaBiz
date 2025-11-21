@@ -96,7 +96,7 @@ export default function UserDashboard() {
           </p>
           <button
             onClick={handleLogout}
-            className="bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            className="bg-linear-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
           >
             Logout
           </button>
@@ -172,7 +172,7 @@ export default function UserDashboard() {
         className={`
           fixed lg:fixed
           top-0 left-0 h-screen
-          w-72 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900
+          w-72 bg-linear-to-b from-gray-900 via-gray-800 to-gray-900
           dark:from-gray-950 dark:via-gray-900 dark:to-gray-950
           text-white
           flex flex-col
@@ -185,7 +185,7 @@ export default function UserDashboard() {
         {/* Logo/Brand Section */}
         <div className="p-6 border-b border-gray-700 dark:border-gray-600">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
               <FaBox className="text-2xl" />
             </div>
             <div>
@@ -198,7 +198,7 @@ export default function UserDashboard() {
         {/* User Profile Section */}
         <div className="p-6 border-b border-gray-700 dark:border-gray-600">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
+            <div className="w-12 h-12 bg-linear-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-xl font-bold shadow-lg">
               {userData?.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -236,7 +236,7 @@ export default function UserDashboard() {
                     font-medium transition-all duration-200
                     relative
                     ${isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                      ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                       : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                     }
                   `}
@@ -254,7 +254,7 @@ export default function UserDashboard() {
         <div className="p-4 border-t border-gray-700 dark:border-gray-600">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-linear-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <FaSignOutAlt className="text-xl" />
             <span>Logout</span>

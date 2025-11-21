@@ -123,7 +123,7 @@ export default function TransactionList() {
 
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                        <div className="text-2xl font-bold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
                           ${tx.total_amount?.toFixed(2)}
                         </div>
                       </div>

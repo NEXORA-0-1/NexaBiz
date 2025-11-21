@@ -129,7 +129,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl border border-blue-200 dark:border-gray-700"
+        className="bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl border border-blue-200 dark:border-gray-700"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -206,7 +206,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                     initial={{ height: 0 }}
                     animate={{ height: `${height}%` }}
                     transition={{ delay: idx * 0.1 }}
-                    className="flex-1 mx-1 bg-gradient-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 rounded-t-lg relative group cursor-pointer hover:from-blue-700 hover:to-blue-500 transition-colors"
+                    className="flex-1 mx-1 bg-linear-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 rounded-t-lg relative group cursor-pointer hover:from-blue-700 hover:to-blue-500 transition-colors"
                   >
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
                       {sale} units
@@ -267,11 +267,11 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-gray-100 p-4 md:p-8 transition-colors">
+    <div className="relative min-h-screen bg-linear-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-gray-100 p-4 md:p-8 transition-colors">
       {/* Top Bar */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
             Dashboard
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
@@ -281,7 +281,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         </div>
         <div className="relative">
           <button
-            className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-700 dark:hover:to-purple-700 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            className="p-3 rounded-xl bg-linear-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-700 dark:hover:to-purple-700 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             onClick={toggleProfile}
           >
             <User className="h-5 w-5" />
@@ -295,7 +295,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                 className="absolute right-0 mt-3 w-72 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl shadow-2xl p-5 z-50 border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
                     {userData.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -319,7 +319,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
         <div className="mb-6">
           <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300">
-            Welcome back, <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">{userData.name}</span> 👋
+            Welcome back, <span className="font-bold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">{userData.name}</span> 👋
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your business today</p>
         </div>
@@ -328,7 +328,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-linear-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium opacity-90">Total Sales</h3>
@@ -343,7 +343,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-linear-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium opacity-90">Monthly Revenue</h3>
@@ -358,7 +358,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-linear-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium opacity-90">Orders</h3>
@@ -373,9 +373,9 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         </div>
 
         {/* AI Chat Section */}
-        <div className="mt-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="mt-6 p-6 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -396,7 +396,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                   className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.type === 'user' ? (
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-md shadow-lg">
+                    <div className="bg-linear-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-md shadow-lg">
                       {msg.content}
                     </div>
                   ) : msg.type === 'forecast' && msg.data ? (
@@ -441,7 +441,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
             <button
               onClick={handleForecast}
               disabled={!query.trim()}
-              className="bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white p-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 disabled:transform-none"
+              className="bg-linear-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white p-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 disabled:transform-none"
             >
               <Send className="h-5 w-5" />
             </button>

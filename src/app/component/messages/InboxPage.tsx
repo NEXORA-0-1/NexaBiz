@@ -229,7 +229,7 @@ export default function InboxPage() {
                   className={`group relative rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden
                     ${email.read 
                       ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700' 
-                      : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-2 border-blue-500 dark:border-blue-400'
+                      : 'bg-linear-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-2 border-blue-500 dark:border-blue-400'
                     }
                   `}
                 >
@@ -238,7 +238,7 @@ export default function InboxPage() {
                     <motion.div
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
-                      className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"
+                      className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-blue-500 to-indigo-500"
                     />
                   )}
 
@@ -315,7 +315,7 @@ export default function InboxPage() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="mb-6 p-5 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-750 rounded-xl border border-purple-200 dark:border-purple-900"
+                                className="mb-6 p-5 bg-linear-to-br from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-750 rounded-xl border border-purple-200 dark:border-purple-900"
                               >
                                 <div className="flex items-center justify-between mb-3">
                                   <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function InboxPage() {
                                     handleSendReply(email)
                                   }}
                                   disabled={sendingReply[email.id]}
-                                  className="mt-4 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                                  className="mt-4 flex items-center gap-2 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                                 >
                                   {sendingReply[email.id] ? (
                                     <>
@@ -407,7 +407,7 @@ export default function InboxPage() {
                                 handleAIReply(email)
                               }}
                               disabled={generatingReply[email.id]}
-                              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                              className="flex items-center gap-2 bg-linear-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
                             >
                               {generatingReply[email.id] ? (
                                 <>
@@ -429,7 +429,7 @@ export default function InboxPage() {
                                 e.stopPropagation()
                                 handleDelete(email.id)
                               }}
-                              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                              className="flex items-center gap-2 bg-linear-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
                             >
                               <FaTrash />
                               Delete

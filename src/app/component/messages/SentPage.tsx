@@ -93,7 +93,7 @@ export default function SentPage() {
           className="mb-8"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-linear-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
               <FaPaperPlane className="text-2xl text-white" />
             </div>
             <div>
@@ -142,7 +142,7 @@ export default function SentPage() {
             className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"
           >
             <div className="mb-6">
-              <div className="inline-block p-6 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full">
+              <div className="inline-block p-6 bg-linear-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full">
                 <FaPaperPlane className="text-5xl text-green-500 dark:text-green-400" />
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function SentPage() {
                   }`}
                 >
                   {/* Success indicator bar */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500" />
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-green-500 to-emerald-500" />
 
                   <div
                     className="p-5 cursor-pointer"
@@ -183,7 +183,7 @@ export default function SentPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-4 flex-1 min-w-0">
                         {/* Icon */}
-                        <div className="mt-1 p-3 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30">
+                        <div className="mt-1 p-3 rounded-xl bg-linear-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30">
                           <FaCheckCircle className="text-green-600 dark:text-green-400 text-lg" />
                         </div>
 
@@ -259,7 +259,7 @@ export default function SentPage() {
                                 // Add resend functionality here
                                 alert('Resend functionality coming soon!')
                               }}
-                              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                              className="flex items-center gap-2 bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
                             >
                               <FaRedo />
                               Resend
@@ -273,7 +273,7 @@ export default function SentPage() {
                                 handleDelete(email.id)
                               }}
                               disabled={deleting[email.id]}
-                              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
+                              className="flex items-center gap-2 bg-linear-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:from-gray-400 disabled:to-gray-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all duration-200"
                             >
                               {deleting[email.id] ? (
                                 <>
