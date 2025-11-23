@@ -182,7 +182,7 @@ const Navigation = () => {
     }`}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5">
         <div className="flex items-center justify-between">
-          <div className="text-3xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg cursor-pointer hover:scale-105 transition-transform">
+          <div className="text-3xl font-black bg-linear-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent drop-shadow-lg cursor-pointer hover:scale-105 transition-transform">
             NexaBiz
           </div>
 
@@ -194,10 +194,10 @@ const Navigation = () => {
                 className="text-slate-300 hover:text-white transition-all duration-300 text-sm font-semibold tracking-wide relative group"
               >
                 {item}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 group-hover:w-full transition-all duration-300"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-linear-to-r from-purple-500 to-pink-500 group-hover:w-full transition-all duration-300"></span>
               </button>
             ))}
-            <button className="px-8 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1">
+            <button className="px-8 py-3 bg-linear-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1">
               Get Started
             </button>
           </div>
@@ -218,7 +218,7 @@ const Navigation = () => {
                 {item}
               </button>
             ))}
-            <button className="w-full px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-bold mt-4">
+            <button className="w-full px-8 py-3 bg-linear-to-r from-purple-600 to-pink-600 rounded-full text-white font-bold mt-4">
               Get Started
             </button>
           </div>
