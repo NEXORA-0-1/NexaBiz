@@ -42,19 +42,19 @@ const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
   );
 };
 
-// Animated Background Component
 const AnimatedBackground = () => {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
+
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let animationFrameId;
-    const particles = [];
+    let animationFrameId: number;
+
+    const particles: Particle[] = [];
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
@@ -62,67 +62,92 @@ const AnimatedBackground = () => {
     };
 
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
 
     class Particle {
-      constructor(canvasWidth, canvasHeight) {
-        this.x = Math.random() * canvasWidth;
-        this.y = Math.random() * canvasHeight;
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      radius: number;
+      opacity: number;
+      color: string;
+
+      constructor(w: number, h: number) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
         this.vx = (Math.random() - 0.5) * 0.8;
         this.vy = (Math.random() - 0.5) * 0.8;
         this.radius = Math.random() * 3 + 1;
         this.opacity = Math.random() * 0.6 + 0.2;
-        const colors = ['147, 51, 234', '236, 72, 153', '59, 130, 246'];
+
+        const colors = ["147, 51, 234", "236, 72, 153", "59, 130, 246"];
         this.color = colors[Math.floor(Math.random() * colors.length)];
       }
 
-      update(canvasWidth, canvasHeight) {
+      update(w: number, h: number) {
         this.x += this.vx;
         this.y += this.vy;
 
-        if (this.x < 0 || this.x > canvasWidth) this.vx *= -1;
-        if (this.y < 0 || this.y > canvasHeight) this.vy *= -1;
+        if (this.x < 0 || this.x > w) this.vx *= -1;
+        if (this.y < 0 || this.y > h) this.vy *= -1;
       }
 
-      draw(context) {
-        context.beginPath();
-        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        const gradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+      draw(context: CanvasRenderingContext2D) {
+        const gradient = context.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        );
+
         gradient.addColorStop(0, `rgba(${this.color}, ${this.opacity})`);
         gradient.addColorStop(1, `rgba(${this.color}, 0)`);
+
+        context.beginPath();
+        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         context.fillStyle = gradient;
         context.fill();
       }
     }
 
+    // Initialize particles
     for (let i = 0; i < 100; i++) {
       particles.push(new Particle(canvas.width, canvas.height));
     }
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      particles.forEach(particle => {
+
+      particles.forEach((particle) => {
         particle.update(canvas.width, canvas.height);
         particle.draw(ctx);
       });
 
-      particles.forEach((p1, i) => {
-        particles.slice(i + 1).forEach(p2 => {
+      // Draw connecting lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const p1 = particles[i];
+          const p2 = particles[j];
+
           const dx = p1.x - p2.x;
           const dy = p1.y - p2.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+          const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 120) {
+          if (dist < 120) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(147, 51, 234, ${0.15 * (1 - distance / 120)})`;
+            ctx.strokeStyle = `rgba(147, 51, 234, ${
+              0.15 * (1 - dist / 120)
+            })`;
             ctx.lineWidth = 1;
             ctx.moveTo(p1.x, p1.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.stroke();
           }
-        });
-      });
+        }
+      }
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -131,11 +156,17 @@ const AnimatedBackground = () => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener("resize", resizeCanvas);
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none opacity-50" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none opacity-50"
+      style={{ display: "block" }}
+    />
+  );
 };
 
 // Floating orbs background
@@ -160,7 +191,7 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -225,7 +256,7 @@ const HeroSection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: { clientX: number; clientY: number; }) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth - 0.5) * 20,
         y: (e.clientY / window.innerHeight - 0.5) * 20
