@@ -209,7 +209,7 @@ const Navigation = () => {
             NexaBiz
           </div>
 
-          <div className="hidden md:flex items-center gap-6 lg:gap-10">
+         <div className="hidden md:flex items-center gap-6 lg:gap-10">
             {['Hero', 'Services', 'Why NexaBiz', 'Process', 'Testimonials'].map(item => (
               <button
                 key={item}
@@ -220,10 +220,20 @@ const Navigation = () => {
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 group-hover:w-full transition-all duration-300"></span>
               </button>
             ))}
-            <button className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105">
-              Get Started
-            </button>
+
+            {/* Buttons grouped with smaller gap */}
+            <div className="flex items-center gap-3 lg:gap-4">
+              <button className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105">
+                Get Started
+              </button>
+
+              <button className="px-6 lg:px-8 py-2 lg:py-3 border border-purple-500 text-purple-300 rounded-full font-bold text-sm lg:text-base transition-all duration-300 hover:bg-purple-600/20 hover:text-white hover:border-purple-400">
+                Login
+              </button>
+            </div>
           </div>
+
+
 
           <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-white p-2 hover:bg-white/10 rounded-lg transition-colors">
             {isOpen ? <X size={24} /> : <Menu size={24} />}
