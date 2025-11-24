@@ -325,9 +325,7 @@ const HeroSection = () => {
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ChevronDown className="text-purple-400 drop-shadow-lg" size={28} />
-        </div>
+        
       </div>
     </section>
   );
