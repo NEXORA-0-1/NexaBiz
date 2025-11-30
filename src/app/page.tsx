@@ -1,7 +1,9 @@
 'use client';
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, ArrowRight, Zap, Brain, Rocket, Shield, ChevronDown, Sparkles, Target, LineChart, Users } from 'lucide-react';
+import Link from 'next/link';
 
 // Loading Screen Component
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
@@ -226,10 +228,11 @@ const Navigation = () => {
               <button className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105">
                 Get Started
               </button>
-
-              <button className="px-6 lg:px-8 py-2 lg:py-3 border border-purple-500 text-purple-300 rounded-full font-bold text-sm lg:text-base transition-all duration-300 hover:bg-purple-600/20 hover:text-white hover:border-purple-400">
-                Login
-              </button>
+              <Link href="/login">
+                <button className="px-6 lg:px-8 py-2 lg:py-3 border border-purple-500 text-purple-300 rounded-full font-bold text-sm lg:text-base transition-all duration-300 hover:bg-purple-600/20 hover:text-white hover:border-purple-400">
+                  Login
+                </button>
+              </Link>
             </div>
           </div>
 
