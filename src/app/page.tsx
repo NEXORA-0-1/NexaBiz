@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, ArrowRight, Zap, Brain, Rocket, Shield, ChevronDown, Sparkles, Target, LineChart, Users } from 'lucide-react';
 import Link from 'next/link';
 import LoginModal from '../app/component/LoginModal'
+import SignupModal from '../app/component/SignupModal' 
 
 // Loading Screen Component
 const LoadingScreen = ({ onComplete }: { onComplete: () => void }) => {
@@ -184,7 +185,7 @@ const FloatingOrbs = () => {
 };
 
 // Navigation Component
-const Navigation = ({ onLoginClick }: { onLoginClick: () => void }) => {
+const Navigation = ({ onLoginClick, onSignupClick}: { onLoginClick: () => void; onSignupClick: () => void;}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -226,7 +227,10 @@ const Navigation = ({ onLoginClick }: { onLoginClick: () => void }) => {
 
             {/* Buttons grouped with smaller gap */}
             <div className="flex items-center gap-3 lg:gap-4">
-              <button className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105">
+              <button 
+                onClick={onSignupClick}
+                className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105"
+              >
                 Get Started
               </button>
               <button 
@@ -256,7 +260,10 @@ const Navigation = ({ onLoginClick }: { onLoginClick: () => void }) => {
                 {item}
               </button>
             ))}
-            <button className="w-full px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-bold text-sm mt-3">
+            <button 
+              onClick={onSignupClick}
+              className="px-6 lg:px-8 py-2 lg:py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white font-bold text-sm lg:text-base hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105"
+            >
               Get Started
             </button>
           </div>
@@ -267,7 +274,7 @@ const Navigation = ({ onLoginClick }: { onLoginClick: () => void }) => {
 };
 
 // Hero Section
-const HeroSection = () => {
+const HeroSection = ({ onSignupClick }: { onSignupClick: () => void }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -315,7 +322,10 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center pt-4 sm:pt-8 px-2">
-            <button className="group w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white text-sm sm:text-base font-bold hover:shadow-2xl hover:shadow-purple-500/60 transition-all duration-500 transform hover:scale-105 flex items-center justify-center gap-2 relative overflow-hidden">
+            <button 
+              onClick={onSignupClick}
+              className="group w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-full text-white text-sm sm:text-base font-bold hover:shadow-2xl hover:shadow-purple-500/60 transition-all duration-500 transform hover:scale-105 flex items-center justify-center gap-2 relative overflow-hidden"
+            >
               <span className="relative z-10">Start Your Journey</span>
               <ArrowRight className="group-hover:translate-x-1 transition-transform relative z-10" size={16} />
             </button>
@@ -792,7 +802,7 @@ const Footer = () => {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   return (
     <>
       {loading && <LoadingScreen onComplete={() => setLoading(false)} />}
@@ -801,8 +811,10 @@ export default function App() {
         <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative">
           <AnimatedBackground />
           <FloatingOrbs />
-          <Navigation onLoginClick={() => setIsLoginModalOpen(true)} />
-          <HeroSection />
+          <Navigation 
+            onLoginClick={() => setIsLoginModalOpen(true)}
+            onSignupClick={() => setIsSignupModalOpen(true)} />
+          <HeroSection onSignupClick={() => setIsSignupModalOpen(true)} />
           <ServicesSection />
           <WhySection />
           <ProcessSection />
@@ -815,6 +827,15 @@ export default function App() {
       <LoginModal 
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
+      />
+
+      <SignupModal 
+        isOpen={isSignupModalOpen} 
+        onClose={() => setIsSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsSignupModalOpen(false)
+          setIsLoginModalOpen(true)
+        }}
       />
     </>
   );
