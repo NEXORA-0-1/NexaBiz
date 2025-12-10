@@ -228,8 +228,8 @@ export default function InboxPage() {
                   layout
                   className={`group relative rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden
                     ${email.read 
-                      ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700' 
-                      : 'bg-linear-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750 border-2 border-blue-500 dark:border-blue-400'
+                      ? 'bg-blue-50 dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
                     }
                   `}
                 >
