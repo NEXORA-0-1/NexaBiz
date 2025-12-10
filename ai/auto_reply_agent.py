@@ -195,7 +195,7 @@ def auto_reply():
     prompt += "\nEnd with: <br><br>Best regards,<br>The Nexabiz Team"
 
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash-001")
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
         result = model.generate_content(prompt)
         reply_text = result.text.strip()
         return jsonify({
