@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FaTrash, FaRobot, FaPaperPlane, FaEnvelope, FaEnvelopeOpen, FaSpinner, FaChevronDown, FaChevronUp, FaEdit, FaCheck, FaTimes } from 'react-icons/fa'
+import { FaTrash, FaRobot, FaPaperPlane, FaEnvelope, FaEnvelopeOpen, FaSpinner, FaChevronDown, FaEdit, FaCheck, FaTimes } from 'react-icons/fa'
 import { getAuth } from "firebase/auth"
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -43,7 +43,7 @@ export default function InboxPage() {
         subject: email.subject,
         body: email.body || 'No preview available',
         date: email.date,
-        read: false,
+        read: email.read ?? false, // make sure we respect backend read status
       }))
 
       setEmails(mappedEmails)
@@ -57,15 +57,43 @@ export default function InboxPage() {
 
   useEffect(() => {
     fetchEmails()
+
+    // Optional: auto-refresh every 30s to sync Gmail state
+    const interval = setInterval(() => {
+      fetchEmails()
+    }, 30000)
+    return () => clearInterval(interval)
   }, [])
 
-  const handleToggleExpand = (id: string) => {
+  const handleToggleExpand = async (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
-    setEmails(prev =>
-      prev.map(email =>
-        email.id === id ? { ...email, read: true } : email
-      )
-    )
+
+    const email = emails.find(e => e.id === id)
+    if (!email) return
+
+    // If already read, no need to mark
+    if (email.read) return
+
+    try {
+      const res = await fetch("/api/gmail/mark-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setEmails(prev =>
+          prev.map(e =>
+            e.id === id ? { ...e, read: true } : e
+          )
+        )
+      } else {
+        console.error("Failed to mark read:", data.error)
+      }
+    } catch (err) {
+      console.error("Error marking email read:", err)
+    }
   }
 
   const handleDelete = (id: string) => {
@@ -122,7 +150,6 @@ export default function InboxPage() {
         setAiReply(prev => ({ ...prev, [email.id]: "" }))
         setEditedReply(prev => ({ ...prev, [email.id]: "" }))
         setEditingReply(prev => ({ ...prev, [email.id]: false }))
-        // Show success animation
         setTimeout(() => setExpandedId(null), 1000)
       } else {
         alert("❌ Failed to send: " + data.error)
@@ -248,7 +275,6 @@ export default function InboxPage() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-4 flex-1 min-w-0">
-                        {/* Icon */}
                         <div className={`mt-1 p-3 rounded-xl transition-colors ${
                           email.read 
                             ? 'bg-gray-100 dark:bg-gray-700' 
@@ -261,7 +287,6 @@ export default function InboxPage() {
                           )}
                         </div>
 
-                        {/* Content */}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1 truncate">
                             {email.subject}
@@ -277,7 +302,6 @@ export default function InboxPage() {
                         </div>
                       </div>
 
-                      {/* Date & Expand Icon */}
                       <div className="flex flex-col items-end gap-2">
                         <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {email.date}

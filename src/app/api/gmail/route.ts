@@ -40,7 +40,10 @@ export async function GET(req: Request) {
         const subject = headers.find((h) => h.name === 'Subject')?.value || 'No Subject'
         const date = headers.find((h) => h.name === 'Date')?.value || ''
 
-        return { id: msg.id, from, to, subject, body: snippet, date }
+        // Determine if the email is read
+        const read = !detail.data.labelIds?.includes('UNREAD')
+
+        return { id: msg.id, from, to, subject, body: snippet, date, read }
       })
     )
 
