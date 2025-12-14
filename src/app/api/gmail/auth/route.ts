@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import path from "path";
@@ -16,6 +18,7 @@ export async function GET() {
 
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
+    prompt: "consent",
     scope: [
       "https://www.googleapis.com/auth/gmail.modify",
       "https://www.googleapis.com/auth/gmail.send",

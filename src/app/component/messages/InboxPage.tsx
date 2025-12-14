@@ -96,9 +96,29 @@ export default function InboxPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this email?')) return
-    setEmails(prev => prev.filter(email => email.id !== id))
+
+    try {
+      const res = await fetch('/api/gmail/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+
+      const data = await res.json()
+
+      if (!data.success) {
+        alert('Failed to delete email')
+        return
+      }
+
+      // Remove from UI after Gmail deletion
+      setEmails(prev => prev.filter(email => email.id !== id))
+    } catch (err) {
+      console.error('Delete failed:', err)
+      alert('Failed to delete email')
+    }
   }
 
   const handleAIReply = async (email: Email) => {
