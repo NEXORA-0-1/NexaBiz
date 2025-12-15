@@ -96,16 +96,17 @@ export default function ProductModal({ onClose, onSuccess }: Props) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="bg-slate-900/95 backdrop-blur-xl border border-purple-500/20 rounded-2xl shadow-2xl shadow-purple-500/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          className="bg-slate-900/95 backdrop-blur-xl border border-purple-500/20 rounded-2xl shadow-2xl shadow-purple-500/10 w-full max-w-2xl"
+          style={{ maxHeight: '85vh' }}
         >
-          {/* Header */}
-          <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xl border-b border-purple-500/20 p-6 flex items-center justify-between">
+          {/* Header - Fixed */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-b border-purple-500/20 p-6 flex items-center justify-between rounded-t-2xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center">
                 <Package className="w-5 h-5 text-white" />
@@ -123,8 +124,14 @@ export default function ProductModal({ onClose, onSuccess }: Props) {
             </button>
           </div>
 
-          {/* Form */}
-          <div className="p-6 space-y-5">
+          {/* Scrollable Form - Custom scrollbar hidden */}
+          <div className="overflow-y-auto p-6 space-y-5" style={{ maxHeight: 'calc(85vh - 160px)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+
             {/* Product Name */}
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
@@ -254,8 +261,8 @@ export default function ProductModal({ onClose, onSuccess }: Props) {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur-xl border-t border-purple-500/20 p-6 flex justify-end gap-3">
+          {/* Footer - Fixed */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-t border-purple-500/20 p-6 flex justify-end gap-3 rounded-b-2xl">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
