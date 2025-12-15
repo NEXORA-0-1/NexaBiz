@@ -394,15 +394,25 @@ export default function UserDashboard() {
         </nav>
 
         {/* Logout Section */}
-        <div className="p-4 border-t border-purple-500/20">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600/80 to-rose-600/80 hover:from-red-600 hover:to-rose-600 text-white font-medium shadow-lg hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 hover:scale-105"
-          >
-            <FaSignOutAlt className="text-lg" />
-            <span className="text-sm">Logout</span>
-          </button>
-        </div>
+        <div className="p-4 border-t border-purple-500/20 flex justify-center">
+  <button
+    onClick={handleLogout}
+    className="
+      flex items-center gap-3
+      px-4 py-2
+      rounded-lg
+      text-slate-400
+      hover:text-red-400
+      hover:bg-red-500/10
+      transition-all
+      duration-200
+    "
+  >
+    <FaSignOutAlt className="text-base" />
+    <span className="text-sm">Logout</span>
+  </button>
+</div>
+
       </aside>
 
       {/* Main Content */}
