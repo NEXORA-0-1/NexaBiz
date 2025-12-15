@@ -83,7 +83,7 @@ def fetch_ai_insight(product, current_stock, forecasted_demand, trend_score, tre
         f"Keep it short, easy to read, and suitable for a business user. Use bullet points if helpful."
     )
     try:
-        model_gemini = genai.GenerativeModel("gemini-2.0-flash-001")
+        model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")
         response = model_gemini.generate_content(prompt)
         return response.text
     except Exception as e:

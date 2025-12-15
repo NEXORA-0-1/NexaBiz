@@ -180,7 +180,7 @@ export default function UserDashboard() {
         }
         setLoading(false)
       } else {
-        router.push('/login')
+        router.push('/')
       }
     })
 
@@ -190,7 +190,7 @@ export default function UserDashboard() {
   const handleLogout = async () => {
     try {
       await signOut(auth)
-      router.push('/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout error:', error)
     }

@@ -1,9 +1,156 @@
 'use client'
 
 import React, { useState } from 'react'
-import { User, TrendingUp, Package, DollarSign, AlertTriangle, CheckCircle, ShoppingCart, Send, Sparkles, BarChart3, Calendar, ArrowUp, ArrowDown } from 'lucide-react'
+import { User, TrendingUp, Package, DollarSign, AlertTriangle, Sparkles, BarChart3, Calendar, ArrowUp, ArrowDown, ShoppingCart, Send, Target, LineChart } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { auth } from "@/lib/firebase"
+import { auth, db } from '@/lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { 
+  FaHome, 
+  FaBox, 
+  FaWarehouse, 
+  FaChartLine, 
+  FaUsers, 
+  FaTruck, 
+  FaEnvelope, 
+  FaCog, 
+  FaSignOutAlt,
+  FaUserCircle,
+  FaBars,
+  FaTimes,
+  FaChevronRight
+} from 'react-icons/fa'
+import MyProductpage from '../component/products/ProductPage'
+import MyInventorypage from '../component/inventory/InventoryPage'
+import MySupplierPage from '../component/supplier/supplierPage'
+import MyCustomerPage from '../component/customer/CustomerPage'
+import MyMassegePage from '../component/messages/MessagePage'
+
+// Animated Background Component
+const AnimatedBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animationFrameId: number
+    const particles: Particle[] = []
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+
+    resizeCanvas()
+    window.addEventListener('resize', resizeCanvas)
+
+    class Particle {
+      x: number
+      y: number
+      vx: number
+      vy: number
+      radius: number
+      opacity: number
+      color: string
+
+      constructor(w: number, h: number) {
+        this.x = Math.random() * w
+        this.y = Math.random() * h
+        this.vx = (Math.random() - 0.5) * 0.5
+        this.vy = (Math.random() - 0.5) * 0.5
+        this.radius = Math.random() * 2 + 1
+        this.opacity = Math.random() * 0.3 + 0.1
+
+        const colors = ['147, 51, 234', '236, 72, 153', '59, 130, 246']
+        this.color = colors[Math.floor(Math.random() * colors.length)]
+      }
+
+      update(w: number, h: number) {
+        this.x += this.vx
+        this.y += this.vy
+
+        if (this.x < 0 || this.x > w) this.vx *= -1
+        if (this.y < 0 || this.y > h) this.vy *= -1
+      }
+
+      draw(context: CanvasRenderingContext2D) {
+        const gradient = context.createRadialGradient(
+          this.x,
+          this.y,
+          0,
+          this.x,
+          this.y,
+          this.radius
+        )
+
+        gradient.addColorStop(0, `rgba(${this.color}, ${this.opacity})`)
+        gradient.addColorStop(1, `rgba(${this.color}, 0)`)
+
+        context.beginPath()
+        context.arc(this.x, this.y, this.radius, 0, Math.PI * 2)
+        context.fillStyle = gradient
+        context.fill()
+      }
+    }
+
+    for (let i = 0; i < 60; i++) {
+      particles.push(new Particle(canvas.width, canvas.height))
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      particles.forEach((particle) => {
+        particle.update(canvas.width, canvas.height)
+        particle.draw(ctx)
+      })
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const p1 = particles[i]
+          const p2 = particles[j]
+
+          const dx = p1.x - p2.x
+          const dy = p1.y - p2.y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+
+          if (dist < 100) {
+            ctx.beginPath()
+            ctx.strokeStyle = `rgba(147, 51, 234, ${0.08 * (1 - dist / 100)})`
+            ctx.lineWidth = 0.5
+            ctx.moveTo(p1.x, p1.y)
+            ctx.lineTo(p2.x, p2.y)
+            ctx.stroke()
+          }
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener('resize', resizeCanvas)
+    }
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none opacity-30"
+      style={{ display: 'block' }}
+    />
+  )
+}
 
 interface UserData {
   userId: string
@@ -11,10 +158,6 @@ interface UserData {
   email: string
   role?: string
   approved: boolean
-}
-
-interface HomeProps {
-  userData: UserData
 }
 
 interface Message {
@@ -37,7 +180,10 @@ interface ForecastData {
   ai_insight: string
 }
 
-const Home: React.FC<HomeProps> = ({ userData }) => {
+type Tab = 'home' | 'product' | 'inventory' | 'finance' | 'customer' | 'messages' | 'setting' | 'Supplier'
+
+// Home Component
+const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
   const [showProfile, setShowProfile] = useState(false)
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -129,28 +275,26 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-linear-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl border border-blue-200 dark:border-gray-700"
+        className="bg-gradient-to-br from-slate-900/90 to-purple-900/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6 shadow-2xl shadow-purple-500/20"
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{data.product}</h3>
+          <h3 className="text-2xl font-black text-white">{data.product}</h3>
           <div className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${
             isHighDemand 
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              ? 'bg-green-500/20 border border-green-500/30 text-green-300' 
+              : 'bg-slate-700/50 border border-slate-600/50 text-slate-300'
           }`}>
             <TrendingUp className="w-4 h-4" />
             {data.trend_score}/100
           </div>
         </div>
 
-        {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <MetricCard 
             icon={<TrendingUp className="w-5 h-5" />}
             label="Forecasted Demand"
             value={`${data.forecasted_demand} units`}
-            color="blue"
+            color="purple"
           />
           <MetricCard 
             icon={<Package className="w-5 h-5" />}
@@ -162,41 +306,39 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
             icon={<DollarSign className="w-5 h-5" />}
             label="Suggested Price"
             value={`$${data.suggested_price}`}
-            color="purple"
+            color="pink"
           />
           <MetricCard 
             icon={<ShoppingCart className="w-5 h-5" />}
             label="Reorder Quantity"
             value={`${data.reorder_qty} units`}
-            color="orange"
+            color="blue"
           />
         </div>
 
-        {/* Stock Alert */}
         {isLowStock && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 p-4 mb-6 rounded-r-lg"
+            className="bg-red-500/10 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg backdrop-blur-sm"
           >
             <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 mr-3" />
+              <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
               <div>
-                <p className="font-semibold text-red-800 dark:text-red-300">Low Stock Alert</p>
-                <p className="text-sm text-red-600 dark:text-red-400">Only {data.stock_coverage}% coverage. Order {data.reorder_qty} units immediately.</p>
+                <p className="font-semibold text-red-300">Low Stock Alert</p>
+                <p className="text-sm text-red-400">Only {data.stock_coverage}% coverage. Order {data.reorder_qty} units immediately.</p>
               </div>
             </div>
           </motion.div>
         )}
 
-        {/* Historical Sales Chart */}
         {data.historical_sales.length > 0 && (
           <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-slate-400 mb-3 flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Last 3 Months Sales
             </h4>
-            <div className="flex items-end justify-between h-32 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-end justify-between h-32 bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20">
               {data.historical_sales.map((sale, idx) => {
                 const maxSale = Math.max(...data.historical_sales)
                 const height = (sale / maxSale) * 100
@@ -206,9 +348,9 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                     initial={{ height: 0 }}
                     animate={{ height: `${height}%` }}
                     transition={{ delay: idx * 0.1 }}
-                    className="flex-1 mx-1 bg-linear-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 rounded-t-lg relative group cursor-pointer hover:from-blue-700 hover:to-blue-500 transition-colors"
+                    className="flex-1 mx-1 bg-gradient-to-t from-purple-600 to-pink-500 rounded-t-lg relative group cursor-pointer hover:from-purple-700 hover:to-pink-600 transition-colors"
                   >
-                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg border border-purple-500/30">
                       {sale} units
                     </div>
                   </motion.div>
@@ -218,23 +360,21 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           </div>
         )}
 
-        {/* AI Insights */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20 mb-6">
           <div className="flex items-center mb-3">
-            <Sparkles className="w-5 h-5 text-purple-500 dark:text-purple-400 mr-2" />
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">AI Recommendations</h4>
+            <Sparkles className="w-5 h-5 text-purple-400 mr-2" />
+            <h4 className="font-semibold text-white">AI Recommendations</h4>
           </div>
-          <div className="prose prose-sm max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-line">
+          <div className="text-sm text-slate-300 whitespace-pre-line leading-relaxed">
             {data.ai_insight}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95">
+        <div className="flex gap-3">
+          <button className="flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:shadow-xl hover:shadow-purple-500/50 text-white font-semibold py-3 px-4 rounded-xl transition-all hover:scale-105 active:scale-95">
             Order Now
           </button>
-          <button className="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 font-semibold py-3 px-4 rounded-lg border-2 border-blue-600 dark:border-blue-500 transition-all">
+          <button className="flex-1 bg-slate-800/50 backdrop-blur-sm hover:bg-slate-700/50 text-purple-300 font-semibold py-3 px-4 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition-all">
             View Details
           </button>
         </div>
@@ -245,43 +385,42 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
   const MetricCard: React.FC<{ icon: React.ReactNode, label: string, value: string, color: string }> = 
     ({ icon, label, value, color }) => {
     const colorClasses = {
-      blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-      red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-      green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-      purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-      orange: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+      purple: 'bg-purple-500/20 border-purple-500/30 text-purple-400',
+      red: 'bg-red-500/20 border-red-500/30 text-red-400',
+      green: 'bg-green-500/20 border-green-500/30 text-green-400',
+      pink: 'bg-pink-500/20 border-pink-500/30 text-pink-400',
+      blue: 'bg-blue-500/20 border-blue-500/30 text-blue-400'
     }
 
     return (
       <motion.div
         whileHover={{ scale: 1.05 }}
-        className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md"
+        className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20 transition-all hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/20"
       >
-        <div className={`w-10 h-10 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center mb-2`}>
+        <div className={`w-10 h-10 rounded-lg border ${colorClasses[color as keyof typeof colorClasses]} flex items-center justify-center mb-2`}>
           {icon}
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{value}</p>
+        <p className="text-xs text-slate-400 mb-1">{label}</p>
+        <p className="text-lg font-bold text-white">{value}</p>
       </motion.div>
     )
   }
 
   return (
-    <div className="relative min-h-screen bg-linear-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-gray-100 p-4 md:p-8 transition-colors">
-      {/* Top Bar */}
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
             Dashboard
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+          <p className="text-sm text-slate-400 mt-1 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
         <div className="relative">
           <button
-            className="p-3 rounded-xl bg-linear-to-br from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 dark:from-blue-600 dark:to-purple-600 dark:hover:from-blue-700 dark:hover:to-purple-700 text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            className="p-3 rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 hover:shadow-xl hover:shadow-purple-500/50 text-white transition-all hover:scale-110 active:scale-95"
             onClick={toggleProfile}
           >
             <User className="h-5 w-5" />
@@ -292,21 +431,21 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                className="absolute right-0 mt-3 w-72 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl shadow-2xl p-5 z-50 border border-gray-200 dark:border-gray-700"
+                className="absolute right-0 mt-3 w-72 bg-gradient-to-br from-slate-900/95 to-purple-900/95 backdrop-blur-xl border border-purple-500/30 text-white rounded-xl shadow-2xl shadow-purple-500/20 p-5 z-50"
               >
-                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-purple-500/30">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
                     {userData.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h4 className="text-lg font-bold">{userData.name}</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{userData.role || 'user'}</p>
+                    <p className="text-xs text-slate-400">{userData.role || 'user'}</p>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   <p className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-600 dark:text-gray-400">Email:</span>
-                    <span className="text-gray-900 dark:text-gray-100">{userData.email}</span>
+                    <span className="font-semibold text-slate-400">Email:</span>
+                    <span className="text-white">{userData.email}</span>
                   </p>
                 </div>
               </motion.div>
@@ -315,26 +454,24 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
         </div>
       </div>
 
-      {/* Main Card */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700">
+      <div className="bg-gradient-to-br from-slate-900/90 to-purple-900/40 backdrop-blur-xl rounded-2xl shadow-2xl shadow-purple-500/10 p-6 md:p-8 border border-purple-500/20">
         <div className="mb-6">
-          <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-300">
-            Welcome back, <span className="font-bold text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">{userData.name}</span> 👋
+          <p className="text-xl md:text-2xl text-slate-300">
+            Welcome back, <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">{userData.name}</span> 
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your business today</p>
+          <p className="text-sm text-slate-400 mt-1">Here's what's happening with your business today</p>
         </div>
 
-        {/* Analytics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-linear-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-gradient-to-br from-purple-600 to-purple-700 backdrop-blur-xl rounded-2xl shadow-lg shadow-purple-500/30 text-white transition-all hover:shadow-xl hover:shadow-purple-500/50 border border-purple-500/20"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium opacity-90">Total Sales</h3>
+              <h3 className="text-sm font-semibold opacity-90">Total Sales</h3>
               <DollarSign className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-bold mb-1">Rs.233</p>
+            <p className="text-3xl font-black mb-1">Rs.233</p>
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowUp className="w-3 h-3" />
               <span>12% from last month</span>
@@ -343,13 +480,13 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-linear-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-gradient-to-br from-pink-600 to-pink-700 backdrop-blur-xl rounded-2xl shadow-lg shadow-pink-500/30 text-white transition-all hover:shadow-xl hover:shadow-pink-500/50 border border-pink-500/20"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium opacity-90">Monthly Revenue</h3>
+              <h3 className="text-sm font-semibold opacity-90">Monthly Revenue</h3>
               <TrendingUp className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-bold mb-1">Rs.2323</p>
+            <p className="text-3xl font-black mb-1">Rs.2323</p>
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowUp className="w-3 h-3" />
               <span>8% from last month</span>
@@ -358,13 +495,13 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
 
           <motion.div 
             whileHover={{ scale: 1.02 }}
-            className="p-6 bg-linear-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-700 rounded-2xl shadow-lg text-white transition-all hover:shadow-xl"
+            className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 backdrop-blur-xl rounded-2xl shadow-lg shadow-blue-500/30 text-white transition-all hover:shadow-xl hover:shadow-blue-500/50 border border-blue-500/20"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium opacity-90">Orders</h3>
+              <h3 className="text-sm font-semibold opacity-90">Orders</h3>
               <ShoppingCart className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-bold mb-1">23</p>
+            <p className="text-3xl font-black mb-1">23</p>
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowDown className="w-3 h-3" />
               <span>3% from last month</span>
@@ -372,20 +509,18 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
           </motion.div>
         </div>
 
-        {/* AI Chat Section */}
-        <div className="mt-6 p-6 bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="p-6 bg-gradient-to-br from-slate-900/80 to-purple-900/30 backdrop-blur-xl rounded-2xl border border-purple-500/20">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Nexabiz AI</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Your intelligent business assistant</p>
+              <h2 className="text-xl font-black text-white">NexaBiz AI</h2>
+              <p className="text-xs text-slate-400">Your intelligent business assistant</p>
             </div>
           </div>
 
-          {/* Messages */}
-          <div className="space-y-4 max-h-[600px] overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+          <div className="space-y-4 max-h-[600px] overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-purple-500/50 scrollbar-track-transparent">
             <AnimatePresence>
               {messages.map((msg, idx) => (
                 <motion.div
@@ -396,7 +531,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                   className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {msg.type === 'user' ? (
-                    <div className="bg-linear-to-br from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-md shadow-lg">
+                    <div className="bg-gradient-to-br from-purple-600 to-pink-600 text-white p-4 rounded-2xl rounded-tr-sm max-w-md shadow-lg shadow-purple-500/30">
                       {msg.content}
                     </div>
                   ) : msg.type === 'forecast' && msg.data ? (
@@ -404,7 +539,7 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                       <ForecastCard data={msg.data} />
                     </div>
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-2xl rounded-tl-sm max-w-md shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div className="bg-slate-900/80 backdrop-blur-sm text-white p-4 rounded-2xl rounded-tl-sm max-w-md shadow-lg border border-purple-500/20">
                       <p className="whitespace-pre-line">{msg.content}</p>
                     </div>
                   )}
@@ -416,11 +551,11 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                  <div className="bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-purple-500/20">
                     <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </motion.div>
@@ -428,20 +563,19 @@ const Home: React.FC<HomeProps> = ({ userData }) => {
             </AnimatePresence>
           </div>
 
-          {/* Input */}
           <div className="flex gap-3">
             <input
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Ask about demand, orders, or stock..."
-              className="flex-1 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 p-4 rounded-xl focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-all shadow-sm"
+              className="flex-1 border-2 border-purple-500/30 bg-slate-900/50 backdrop-blur-sm text-white placeholder-slate-400 p-4 rounded-xl focus:outline-none focus:border-purple-500/60 transition-all"
               onKeyDown={e => e.key === 'Enter' && handleForecast()}
             />
             <button
               onClick={handleForecast}
               disabled={!query.trim()}
-              className="bg-linear-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 dark:from-blue-500 dark:to-purple-500 dark:hover:from-blue-600 dark:hover:to-purple-600 disabled:from-gray-400 disabled:to-gray-500 dark:disabled:from-gray-600 dark:disabled:to-gray-700 text-white p-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 disabled:transform-none"
+              className="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 hover:shadow-xl hover:shadow-purple-500/50 disabled:from-slate-600 disabled:to-slate-700 text-white p-4 rounded-xl transition-all disabled:cursor-not-allowed hover:scale-105 active:scale-95 disabled:transform-none disabled:shadow-none"
             >
               <Send className="h-5 w-5" />
             </button>
