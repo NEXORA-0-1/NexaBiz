@@ -3,15 +3,16 @@
 import { auth, db } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 import { useState } from 'react'
+import { X, Layers, Tag, Weight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type Props = {
   onClose: () => void
   onSuccess: () => void
 }
 
-// Generate material ID (M + 4 digits)
 const generateMaterialID = () => {
-  const num = Math.floor(1000 + Math.random() * 9000) // 4-digit random number
+  const num = Math.floor(1000 + Math.random() * 9000)
   return `M${num}`
 }
 
@@ -22,13 +23,15 @@ export default function RawMaterialModal({ onClose, onSuccess }: Props) {
 
   const handleAddMaterial = async () => {
     const user = auth.currentUser
-    if (!user) return alert('User not logged in')
-
-    const mID = generateMaterialID()
-    const userMaterialsRef = collection(db, 'users', user.uid, 'materials')
+    if (!user) {
+      alert('User not logged in')
+      return
+    }
 
     try {
       setLoading(true)
+      const mID = generateMaterialID()
+      const userMaterialsRef = collection(db, 'users', user.uid, 'materials')
 
       await addDoc(userMaterialsRef, {
         material_id: mID,
@@ -48,44 +51,93 @@ export default function RawMaterialModal({ onClose, onSuccess }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Add Raw Material</h2>
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.2 }}
+          className="bg-slate-900/95 backdrop-blur-xl border border-pink-500/20 rounded-2xl shadow-2xl shadow-pink-500/10 w-full max-w-md"
+        >
+          {/* Header */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-b border-pink-500/20 p-6 flex items-center justify-between rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-600 via-purple-600 to-blue-600 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white">Add Raw Material</h2>
+                <p className="text-xs text-slate-500">Create a new material entry</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        <input
-          type="text"
-          value={mName}
-          onChange={(e) => setMName(e.target.value)}
-          placeholder="Material Name (e.g. Cotton)"
-          className="border px-3 py-2 rounded w-full mb-3"
-          required
-        />
+          {/* Form */}
+          <div className="p-6 space-y-5">
+            {/* Material Name */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <Tag className="w-4 h-4 text-pink-400" />
+                Material Name
+              </label>
+              <input
+                type="text"
+                value={mName}
+                onChange={(e) => setMName(e.target.value)}
+                placeholder="e.g. Cotton, Polyester, Denim"
+                className="w-full bg-slate-900/50 border border-pink-500/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500/40 transition-all"
+                required
+              />
+            </div>
 
-        <input
-          type="number"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          placeholder="Quantity (kg)"
-          className="border px-3 py-2 rounded w-full mb-3"
-          required
-        />
+            {/* Quantity */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <Weight className="w-4 h-4 text-green-400" />
+                Quantity (kg)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-slate-900/50 border border-pink-500/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-pink-500/40 transition-all"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-2">Enter the available quantity in kilograms</p>
+            </div>
+          </div>
 
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddMaterial}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : 'Add'}
-          </button>
-        </div>
+          {/* Footer */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-t border-pink-500/20 p-6 flex justify-end gap-3 rounded-b-2xl">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 rounded-xl font-semibold transition-all"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddMaterial}
+              disabled={loading}
+              className="px-6 py-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:shadow-xl hover:shadow-pink-500/30 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Adding...' : 'Add Material'}
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </AnimatePresence>
   )
 }
