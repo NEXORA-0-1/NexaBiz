@@ -12,6 +12,8 @@ import {
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore'
+import { X, Package, Plus, Trash2, TrendingUp, DollarSign, Hash } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 import supplierData from '@/src/data/supplierDummy.json'
 
@@ -42,9 +44,9 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
   const [supplierName, setSupplierName] = useState('')
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<ItemRow[]>([])
+  const [loading, setLoading] = useState(false)
   const allSuppliers = supplierData as string[]
 
-  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       const user = auth.currentUser
@@ -67,6 +69,10 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
 
   const handleAddRow = () => {
     setItems([...items, { productId: '', pid: '', product_name: '', base_cost_usd: 0, qty: 1 }])
+  }
+
+  const handleRemoveRow = (index: number) => {
+    setItems(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSelectProduct = (index: number, productId: string) => {
@@ -105,7 +111,7 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
     if (items.some(i => !i.productId)) return alert('Select product on all rows')
 
     try {
-      // Merge duplicate products
+      setLoading(true)
       const mergedMap = new Map<string, ItemRow>()
       for (const i of items) {
         const key = i.productId
@@ -123,12 +129,10 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
 
         const productRef = doc(db, 'users', user.uid, 'products', item.productId)
 
-        // 1️⃣ Increase product stock
         await updateDoc(productRef, {
           stock_amount: (product.stock_amount || 0) + item.qty,
         })
 
-        // 2️⃣ Deduct material if product has a material_id
         if (product.material_id) {
           const materialQuery = query(
             collection(db, 'users', user.uid, 'materials'),
@@ -149,7 +153,6 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
         }
       }
 
-      // 3️⃣ Record stock transaction
       const stockRef = collection(db, 'users', user.uid, 'addstock')
       await addDoc(stockRef, {
         supplierName,
@@ -170,106 +173,188 @@ export default function AddStockModal({ onClose, onSuccess }: Props) {
     } catch (err: any) {
       console.error(err)
       alert('❌ Error adding stock: ' + err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Add Stock</h2>
-
-        <select
-          value={supplierName}
-          onChange={(e) => setSupplierName(e.target.value)}
-          className="border px-3 py-2 rounded w-full mb-4"
-          required
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.2 }}
+          className="bg-slate-900/95 backdrop-blur-xl border border-pink-500/20 rounded-2xl shadow-2xl shadow-pink-500/10 w-full max-w-4xl"
+          style={{ maxHeight: '90vh' }}
         >
-          <option value="">Select Supplier</option>
-          {allSuppliers.map(supplier => (
-            <option key={supplier} value={supplier}>
-              {supplier}
-            </option>
-          ))}
-        </select>
+          {/* Header */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-b border-pink-500/20 p-6 flex items-center justify-between rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-600 via-purple-600 to-blue-600 flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white">Add Stock</h2>
+                <p className="text-xs text-slate-500">Increase inventory from supplier</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        <table className="w-full border mb-3">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 border">Product</th>
-              <th className="p-2 border">Base cost</th>
-              <th className="p-2 border">Qty</th>
-              <th className="p-2 border">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((i, idx) => (
-              <tr key={idx}>
-                <td className="p-2 border">
-                  <select
-                    value={i.productId}
-                    onChange={e => handleSelectProduct(idx, e.target.value)}
-                    className="border px-2 py-1 rounded w-full"
-                  >
-                    <option value="">Select Product</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.product_name} (Stock: {p.stock_amount})
-                      </option>
+          {/* Scrollable Form */}
+          <div className="overflow-y-auto p-6 space-y-5" style={{ maxHeight: 'calc(90vh - 180px)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+
+            {/* Supplier Selection */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-300 mb-2">
+                <TrendingUp className="w-4 h-4 text-pink-400" />
+                Supplier
+              </label>
+              <select
+                value={supplierName}
+                onChange={(e) => setSupplierName(e.target.value)}
+                className="w-full bg-slate-900/50 border border-pink-500/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-pink-500/40 transition-all"
+                required
+              >
+                <option value="" className="bg-slate-900">Select Supplier</option>
+                {allSuppliers.map(supplier => (
+                  <option key={supplier} value={supplier} className="bg-slate-900">
+                    {supplier}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Items Table */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-300">
+                  <Package className="w-4 h-4 text-purple-400" />
+                  Products
+                </label>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleAddRow}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg hover:bg-green-500/20 transition-all font-medium text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Product
+                </motion.button>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-pink-500/20">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-900/50">
+                      <th className="p-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Product</th>
+                      <th className="p-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Base Cost</th>
+                      <th className="p-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Quantity</th>
+                      <th className="p-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Subtotal</th>
+                      <th className="p-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-slate-900/30">
+                    {items.map((item, idx) => (
+                      <tr key={idx} className="border-t border-pink-500/10">
+                        <td className="p-3">
+                          <select
+                            value={item.productId}
+                            onChange={e => handleSelectProduct(idx, e.target.value)}
+                            className="w-full bg-slate-900/50 border border-pink-500/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-pink-500/40 transition-all"
+                          >
+                            <option value="" className="bg-slate-900">Select Product</option>
+                            {products.map(p => (
+                              <option key={p.id} value={p.id} className="bg-slate-900">
+                                {p.product_name} (Stock: {p.stock_amount})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={item.base_cost_usd}
+                            onChange={e => handlePriceChange(idx, e.target.value)}
+                            className="w-full bg-slate-900/50 border border-pink-500/20 rounded-lg px-3 py-2 text-white text-sm text-right focus:outline-none focus:border-pink-500/40 transition-all"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.qty}
+                            onChange={e => handleQtyChange(idx, e.target.value)}
+                            className="w-full bg-slate-900/50 border border-pink-500/20 rounded-lg px-3 py-2 text-white text-sm text-right focus:outline-none focus:border-pink-500/40 transition-all"
+                          />
+                        </td>
+                        <td className="p-3 text-right text-white font-semibold">
+                          ${(item.qty * item.base_cost_usd).toFixed(2)}
+                        </td>
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => handleRemoveRow(idx)}
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
                     ))}
-                  </select>
-                </td>
-                <td className="p-2 border">
-                  <input
-                    type="number"
-                    min={0}
-                    value={i.base_cost_usd}
-                    onChange={e => handlePriceChange(idx, e.target.value)}
-                    className="border px-2 py-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-2 border">
-                  <input
-                    type="number"
-                    min={1}
-                    value={i.qty}
-                    onChange={e => handleQtyChange(idx, e.target.value)}
-                    className="border px-2 py-1 rounded w-full"
-                  />
-                </td>
-                <td className="p-2 border text-right">
-                  {(i.qty * i.base_cost_usd).toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-        <button
-          onClick={handleAddRow}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded mb-3"
-        >
-          + Add Product
-        </button>
+            {/* Total */}
+            <div className="flex justify-end">
+              <div className="bg-slate-900/50 border border-pink-500/20 rounded-xl px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400 font-medium">Total Bill:</span>
+                  <span className="text-3xl font-black bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                    ${totalAmount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex justify-end text-lg font-semibold mb-4">
-          Total Bill: ${totalAmount.toFixed(2)}
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveStock}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Save Stock
-          </button>
-        </div>
+          {/* Footer */}
+          <div className="bg-slate-900/95 backdrop-blur-xl border-t border-pink-500/20 p-6 flex justify-end gap-3 rounded-b-2xl">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 rounded-xl font-semibold transition-all"
+            >
+              Cancel
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSaveStock}
+              disabled={loading}
+              className="px-6 py-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:shadow-xl hover:shadow-pink-500/30 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Saving...' : 'Save Stock'}
+            </motion.button>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </AnimatePresence>
   )
 }
