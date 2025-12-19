@@ -26,6 +26,7 @@ import MyInventorypage from '../component/inventory/InventoryPage'
 import MySupplierPage from '../component/supplier/supplierPage'
 import MyCustomerPage from '../component/customer/CustomerPage'
 import MyMassegePage from '../component/messages/MessagePage'
+import MyFinancePage from '../component/finance/FinancePage'
 
 // Animated Background Component
 const AnimatedBackground = () => {
@@ -252,12 +253,7 @@ export default function UserDashboard() {
       case 'inventory':
         return <MyInventorypage />
       case 'finance':
-        return (
-          <div className="bg-gradient-to-br from-slate-900/90 to-purple-900/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-white mb-4">Finance</h2>
-            <p className="text-slate-400">This is the Finance page content.</p>
-          </div>
-        )
+        return <MyFinancePage />
       case 'customer':
         return <MyCustomerPage />
       case 'messages':
