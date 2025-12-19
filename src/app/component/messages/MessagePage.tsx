@@ -1,208 +1,190 @@
 'use client'
-
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { FaInbox, FaPaperPlane, FaEnvelope, FaBell } from 'react-icons/fa'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Inbox, Send, Mail, Bell, Plus, TrendingUp } from 'lucide-react'
 import InboxPage from './InboxPage'
 import SentPage from './SentPage'
 
 export default function MessagePage() {
   const [activeTab, setActiveTab] = useState<'inbox' | 'sent'>('inbox')
 
-  const tabs = [
-    {
-      id: 'inbox' as const,
-      label: 'Inbox',
-      icon: FaInbox,
-      color: 'blue',
-      description: 'Received messages'
-    },
-    {
-      id: 'sent' as const,
-      label: 'Sent',
-      icon: FaPaperPlane,
-      color: 'green',
-      description: 'Sent messages'
-    }
-  ]
-
   return (
-    <div className="bg-linear-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
-      {/* Header Section - Not Sticky */}
-      <div className="backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto p-4 md:p-6">
-          {/* Title & Actions */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
-                <FaEnvelope className="text-2xl text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                  Messages
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Manage your email communications
-                </p>
-              </div>
-            </div>
-
-            {/* Notification Bell */}
-            <button className="relative p-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 group">
-              <FaBell className="text-xl text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
-                3
-              </span>
-            </button>
-          </div>
-
-          {/* Modern Tabs */}
-          <div className="relative bg-gray-100 dark:bg-gray-800 rounded-2xl p-1.5 shadow-inner">
-            <div className="grid grid-cols-2 gap-1.5 relative">
-              {/* Animated Background */}
-              <motion.div
-                layoutId="activeTab"
-                className={`absolute inset-y-1.5 rounded-xl shadow-md ${
-                  activeTab === 'inbox'
-                    ? 'bg-linear-to-br from-blue-500 to-indigo-600'
-                    : 'bg-linear-to-br from-green-500 to-emerald-600'
-                }`}
-                initial={false}
-                animate={{
-                  x: activeTab === 'inbox' ? 0 : '100%',
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 30
-                }}
-                style={{ width: 'calc(50% - 3px)' }}
-              />
-
-              {/* Tab Buttons */}
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-
-                return (
-                  <motion.button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative z-10 flex items-center justify-center gap-3 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
-                      isActive
-                        ? 'text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Icon className={`text-lg ${isActive ? 'animate-pulse' : ''}`} />
-                    <div className="flex flex-col items-start">
-                      <span className="text-base md:text-lg">{tab.label}</span>
-                      {isActive && (
-                        <motion.span
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-xs opacity-90 hidden md:block"
-                        >
-                          {tab.description}
-                        </motion.span>
-                      )}
-                    </div>
-                  </motion.button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <FaInbox className="text-blue-600 dark:text-blue-400 text-sm" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Unread</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">12</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <FaPaperPlane className="text-green-600 dark:text-green-400 text-sm" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Sent Today</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">8</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <FaEnvelope className="text-purple-600 dark:text-purple-400 text-sm" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">234</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                  <FaBell className="text-orange-600 dark:text-orange-400 text-sm" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Pending</div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">3</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+            Messages
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">Manage your email communications</p>
         </div>
+        
+        {/* Notification Bell */}
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative p-3 rounded-xl bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 hover:border-purple-500/30 transition-all duration-300 group"
+        >
+          <Bell className="w-5 h-5 text-slate-400 group-hover:text-purple-400 transition-colors" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-pink-500 to-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
+            3
+          </span>
+        </motion.button>
       </div>
 
-      {/* Content Area */}
-      <div className="max-w-7xl mx-auto">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, x: activeTab === 'inbox' ? -20 : 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: activeTab === 'inbox' ? 20 : -20 }}
-          transition={{ duration: 0.3 }}
+          whileHover={{ scale: 1.02, y: -2 }}
+          className="p-4 bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl shadow-lg hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
         >
-          {activeTab === 'inbox' && <InboxPage />}
-          {activeTab === 'sent' && <SentPage />}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500 font-medium mb-1">Unread</p>
+              <p className="text-2xl font-black text-white">12</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+              <Inbox className="w-5 h-5 text-purple-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02, y: -2 }}
+          className="p-4 bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl shadow-lg hover:shadow-xl hover:shadow-pink-500/10 transition-all duration-300 cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500 font-medium mb-1">Sent Today</p>
+              <p className="text-2xl font-black text-white">8</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
+              <Send className="w-5 h-5 text-pink-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02, y: -2 }}
+          className="p-4 bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl shadow-lg hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500 font-medium mb-1">Total</p>
+              <p className="text-2xl font-black text-white">234</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Mail className="w-5 h-5 text-blue-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02, y: -2 }}
+          className="p-4 bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/10 transition-all duration-300 cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-500 font-medium mb-1">Pending</p>
+              <p className="text-2xl font-black text-white">3</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-green-400" />
+            </div>
+          </div>
         </motion.div>
       </div>
+
+      {/* Enhanced Tabs */}
+      <div className="bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl p-2 inline-flex gap-2">
+        <button
+          onClick={() => setActiveTab('inbox')}
+          className={`
+            relative px-6 py-3 rounded-lg font-semibold transition-all duration-300
+            ${activeTab === 'inbox'
+              ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }
+          `}
+        >
+          <span className="relative z-10 flex items-center gap-2">
+            <Inbox className="w-4 h-4" />
+            Inbox
+          </span>
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('sent')}
+          className={`
+            relative px-6 py-3 rounded-lg font-semibold transition-all duration-300
+            ${activeTab === 'sent'
+              ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white shadow-lg shadow-purple-500/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }
+          `}
+        >
+          <span className="relative z-10 flex items-center gap-2">
+            <Send className="w-4 h-4" />
+            Sent
+          </span>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <AnimatePresence mode="wait">
+        {activeTab === 'inbox' && (
+          <motion.div
+            key="inbox"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl p-6 shadow-xl"
+          >
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-white mb-1">Inbox Messages</h2>
+              <p className="text-sm text-slate-500">Your received messages</p>
+            </div>
+
+            <InboxPage />
+          </motion.div>
+        )}
+
+        {activeTab === 'sent' && (
+          <motion.div
+            key="sent"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-slate-900/50 backdrop-blur-xl border border-purple-500/10 rounded-xl p-6 shadow-xl"
+          >
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-white mb-1">Sent Messages</h2>
+              <p className="text-sm text-slate-500">Messages you've sent</p>
+            </div>
+
+            <SentPage />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Action Button (Compose) */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className="fixed bottom-8 right-8 p-5 bg-linear-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 z-50 group"
+        className="fixed bottom-8 right-8 p-5 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 hover:shadow-2xl hover:shadow-purple-500/50 text-white rounded-full transition-all duration-300 z-50 group"
         onClick={() => alert('Compose new email functionality coming soon!')}
       >
         <div className="relative">
-          <FaEnvelope className="text-2xl" />
+          <Plus className="w-6 h-6" />
           <motion.div
             className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full"
             animate={{ scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
         </div>
-        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm font-medium rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-900/95 backdrop-blur-xl border border-purple-500/20 text-white text-sm font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl">
           Compose New Email
         </span>
       </motion.button>
