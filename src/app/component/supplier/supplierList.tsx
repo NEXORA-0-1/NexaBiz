@@ -1,10 +1,9 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { auth, db } from '@/lib/firebase'
 import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore'
-import { FaTrash, FaEdit } from 'react-icons/fa'
-// import EditSupplierModal from './EditSupplierModal' // you’ll add this later
+import { Trash2, Edit3, ChevronDown, ChevronUp, Truck, Mail, Phone, MapPin, Calendar, Hash, Tag } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MySupplierList() {
   const [suppliers, setSuppliers] = useState<any[]>([])
@@ -14,9 +13,7 @@ export default function MySupplierList() {
   useEffect(() => {
     const user = auth.currentUser
     if (!user) return
-
     const userSuppliersRef = collection(db, 'users', user.uid, 'suppliers')
-
     const unsubscribe = onSnapshot(userSuppliersRef, snapshot => {
       const supplierList = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -24,10 +21,8 @@ export default function MySupplierList() {
       }))
       setSuppliers(supplierList)
     })
-
     return () => unsubscribe()
   }, [])
-
 
   const handleToggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
@@ -36,100 +31,198 @@ export default function MySupplierList() {
   const handleDelete = async (id: string) => {
     const user = auth.currentUser
     if (!user) return
-
     const confirmDelete = window.confirm('Are you sure you want to delete this supplier?')
     if (!confirmDelete) return
-
     await deleteDoc(doc(db, 'users', user.uid, 'suppliers', id))
-    alert('Supplier deleted successfully')
   }
 
-
   return (
-    <div className="mt-6">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">My Suppliers</h2>
-
+    <div className="space-y-4">
       {suppliers.length === 0 ? (
-        <p className="text-gray-400">No suppliers added yet.</p>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-16 px-4"
+        >
+          <div className="w-20 h-20 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4">
+            <Truck className="w-10 h-10 text-purple-400" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">No Suppliers Yet</h3>
+          <p className="text-slate-500 text-center">Start adding suppliers to manage your supply chain</p>
+        </motion.div>
       ) : (
-        <div className="space-y-4">
-          {suppliers.map(supplier => (
-            <div
-              key={supplier.id}
-              className="rounded-lg shadow-md bg-white hover:shadow-lg transition duration-300 p-4 border-l-4 border-green-500"
-              onClick={() => handleToggleExpand(supplier.id)}
-            >
-              <div className="flex justify-between items-center cursor-pointer">
-                <div>
-                  <h3 className="text-lg font-semibold">{supplier.supplier_name}</h3>
-                  <p className="text-sm text-gray-600">
-                    {supplier.supplier_id} — {supplier.category}
-                  </p>
-                </div>
-                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
-                  {supplier.location}
-                </span>
-              </div>
+        <div className="space-y-3">
+          {suppliers.map((supplier, index) => {
+            const isExpanded = expandedId === supplier.id
 
-              {expandedId === supplier.id && (
-                <div className="mt-4 border-t pt-4 space-y-1">
-                  <p>
-                    <strong>Supplier ID:</strong> {supplier.supplier_id}
-                  </p>
-                  <p>
-                    <strong>Category:</strong> {supplier.category}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {supplier.email}
-                  </p>
-                  <p>
-                    <strong>Phone:</strong> {supplier.phone}
-                  </p>
-                  <p>
-                    <strong>Location:</strong> {supplier.location}
-                  </p>
-                  <p>
-                    <strong>Created At:</strong>{' '}
-                    {supplier.createdAt?.toDate
-                      ? new Date(supplier.createdAt.toDate()).toLocaleString()
-                      : 'N/A'}
-                  </p>
+            return (
+              <motion.div
+                key={supplier.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="group"
+              >
+                <div
+                  className={`
+                    bg-slate-900/50 backdrop-blur-xl rounded-xl border transition-all duration-300 cursor-pointer
+                    ${isExpanded 
+                      ? 'border-purple-500/40 shadow-xl shadow-purple-500/10' 
+                      : 'border-purple-500/10 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5'
+                    }
+                  `}
+                  onClick={() => handleToggleExpand(supplier.id)}
+                >
+                  {/* Header */}
+                  <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                        <Truck className="w-6 h-6 text-purple-400" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-white truncate">{supplier.supplier_name}</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <p className="text-sm text-slate-400">{supplier.supplier_id}</p>
+                          <span className="text-slate-600">•</span>
+                          <p className="text-sm text-slate-400">{supplier.category}</p>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex gap-3 mt-4">
-                    <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        handleDelete(supplier.id)
-                      }}
-                      className="flex items-center gap-1 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      <FaTrash /> Delete
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {supplier.location}
+                      </div>
 
-                    <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        setEditingSupplier(supplier)
-                      }}
-                      className="flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                    >
-                      <FaEdit /> Edit
-                    </button>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-purple-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-purple-400 transition-colors" />
+                      )}
+                    </div>
                   </div>
+
+                  {/* Expanded Content */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 border-t border-purple-500/10">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
+                                  <Hash className="w-4 h-4 text-purple-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Supplier ID</p>
+                                  <p className="text-sm font-semibold text-white">{supplier.supplier_id}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center flex-shrink-0">
+                                  <Tag className="w-4 h-4 text-pink-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Category</p>
+                                  <p className="text-sm font-semibold text-white">{supplier.category}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                  <Mail className="w-4 h-4 text-blue-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Email</p>
+                                  <p className="text-sm font-semibold text-white">{supplier.email}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                                  <Phone className="w-4 h-4 text-green-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Phone</p>
+                                  <p className="text-sm font-semibold text-white">{supplier.phone}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                                  <MapPin className="w-4 h-4 text-green-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Location</p>
+                                  <p className="text-sm font-semibold text-white">{supplier.location}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-700/30 border border-slate-600/30 flex items-center justify-center flex-shrink-0">
+                                  <Calendar className="w-4 h-4 text-slate-400" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-slate-500 mb-0.5">Created At</p>
+                                  <p className="text-sm font-semibold text-white">
+                                    {supplier.createdAt?.toDate
+                                      ? new Date(supplier.createdAt.toDate()).toLocaleDateString()
+                                      : 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-3 mt-6 pt-4 border-t border-purple-500/10">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={e => {
+                                e.stopPropagation()
+                                setEditingSupplier(supplier)
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/20 transition-all duration-300 font-medium"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              Edit
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={e => {
+                                e.stopPropagation()
+                                handleDelete(supplier.id)
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg hover:bg-red-500/20 transition-all duration-300 font-medium"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </motion.button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              )}
-            </div>
-          ))}
+              </motion.div>
+            )
+          })}
         </div>
       )}
-
-      {/* Future Edit Modal */}
-      {/* {editingSupplier && (
-        <EditSupplierModal
-          supplier={editingSupplier}
-          onClose={() => setEditingSupplier(null)}
-        />
-      )} */}
     </div>
   )
 }
