@@ -1,21 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Package, Layers, Plus, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProductModal from '../products/ProductModal'
 import MyProductList from '../products/MyProductList'
 import RawMaterialModal from '../products/RawMaterialModal'
 import RawMaterialList from '../products/RawMaterialList'
+import { auth, db } from '@/lib/firebase'
+import { collection, onSnapshot } from 'firebase/firestore'
 
 export default function ProductPage() {
   const [activeTab, setActiveTab] = useState<'product' | 'raw'>('product')
   const [showModal, setShowModal] = useState(false)
   const [refresh, setRefresh] = useState(false)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [totalMaterials, setTotalMaterials] = useState(0)
+  const [activeItems, setActiveItems] = useState(0)
 
   const handleAddSuccess = () => {
     setRefresh(!refresh)
   }
+
+  // 🔹 ONLY FOR STATS (NEW)
+  useEffect(() => {
+    const user = auth.currentUser
+    if (!user) return
+
+    const productsRef = collection(db, 'users', user.uid, 'products')
+    const materialsRef = collection(db, 'users', user.uid, 'materials')
+
+    const unsubProducts = onSnapshot(productsRef, snap => {
+      const products = snap.docs.map(d => d.data())
+      setTotalProducts(products.length)
+      setActiveItems(
+        products.reduce((sum: number, p: any) => sum + (p.stock_amount || 0), 0)
+      )
+    })
+
+    const unsubMaterials = onSnapshot(materialsRef, snap => {
+      setTotalMaterials(snap.docs.length)
+    })
+
+    return () => {
+      unsubProducts()
+      unsubMaterials()
+    }
+  }, [refresh])
 
   return (
     <>
@@ -50,7 +81,7 @@ export default function ProductPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 font-medium mb-1">Total Products</p>
-                <p className="text-2xl font-black text-white">124</p>
+                <p className="text-2xl font-black text-white">{totalProducts}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
                 <Package className="w-6 h-6 text-purple-400" />
@@ -65,7 +96,7 @@ export default function ProductPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 font-medium mb-1">Raw Materials</p>
-                <p className="text-2xl font-black text-white">48</p>
+                <p className="text-2xl font-black text-white">{totalMaterials}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
                 <Layers className="w-6 h-6 text-pink-400" />
@@ -80,7 +111,7 @@ export default function ProductPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 font-medium mb-1">Active Items</p>
-                <p className="text-2xl font-black text-white">156</p>
+                <p className="text-2xl font-black text-white">{activeItems}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-blue-400" />
