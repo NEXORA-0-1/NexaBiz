@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { User, TrendingUp, Package, DollarSign, AlertTriangle, Sparkles, BarChart3, Calendar, ArrowUp, ArrowDown, ShoppingCart, Send, Target, LineChart } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { auth, db } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { collection, onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -188,6 +188,49 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isTyping, setIsTyping] = useState(false)
+  const [totalSales, setTotalSales] = useState(0)
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0)
+  const [orderCount, setOrderCount] = useState(0)
+
+  useEffect(() => {
+  const user = auth.currentUser
+  if (!user) return
+
+  const txRef = collection(db, 'users', user.uid, 'transactions')
+
+  const unsubscribe = onSnapshot(txRef, snapshot => {
+    let total = 0
+    let monthly = 0
+    let orders = snapshot.size
+
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+
+    snapshot.forEach(doc => {
+      const data = doc.data()
+      const amount = data.total_amount || 0
+      const createdAt = data.createdAt?.toDate?.()
+
+      total += amount
+
+      if (
+        createdAt &&
+        createdAt.getMonth() === currentMonth &&
+        createdAt.getFullYear() === currentYear
+      ) {
+        monthly += amount
+      }
+    })
+
+    setTotalSales(total)
+    setMonthlyRevenue(monthly)
+    setOrderCount(orders)
+  })
+
+  return () => unsubscribe()
+}, [])
+
 
   const toggleProfile = () => setShowProfile(prev => !prev)
 
@@ -471,7 +514,9 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
               <h3 className="text-sm font-semibold opacity-90">Total Sales</h3>
               <DollarSign className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-black mb-1">Rs.233</p>
+            <p className="text-3xl font-black mb-1">
+              Rs.{totalSales.toFixed(2)}
+            </p>
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowUp className="w-3 h-3" />
               <span>12% from last month</span>
@@ -486,7 +531,10 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
               <h3 className="text-sm font-semibold opacity-90">Monthly Revenue</h3>
               <TrendingUp className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-black mb-1">Rs.2323</p>
+            <p className="text-3xl font-black mb-1">
+              Rs.{monthlyRevenue.toFixed(2)}
+            </p>
+
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowUp className="w-3 h-3" />
               <span>8% from last month</span>
@@ -501,7 +549,10 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
               <h3 className="text-sm font-semibold opacity-90">Orders</h3>
               <ShoppingCart className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-black mb-1">23</p>
+            <p className="text-3xl font-black mb-1">
+              {orderCount}
+            </p>
+
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowDown className="w-3 h-3" />
               <span>3% from last month</span>
