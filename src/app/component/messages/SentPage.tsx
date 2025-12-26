@@ -12,7 +12,11 @@ interface SentEmail {
   date: string
 }
 
-export default function SentPage() {
+export default function SentPage({
+  onEmailsLoaded,
+}: {
+  onEmailsLoaded: (emails: SentEmail[]) => void
+}) {
   const [emails, setEmails] = useState<SentEmail[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -35,6 +39,7 @@ export default function SentPage() {
         }))
 
         setEmails(mappedEmails)
+        onEmailsLoaded(mappedEmails)
       } catch (error) {
         console.error('Error fetching sent emails:', error)
         setEmails([])

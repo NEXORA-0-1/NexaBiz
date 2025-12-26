@@ -19,7 +19,11 @@ interface Email {
   read: boolean
 }
 
-export default function InboxPage() {
+export default function InboxPage({
+  onEmailsLoaded,
+}: {
+  onEmailsLoaded: (emails: Email[]) => void
+}) {
   const [emails, setEmails] = useState<Email[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -44,6 +48,7 @@ export default function InboxPage() {
         read: email.read ?? false,
       }))
       setEmails(mappedEmails)
+      onEmailsLoaded(mappedEmails) 
     } catch (err) {
       console.error('Error fetching emails:', err)
       setEmails([])
@@ -73,11 +78,13 @@ export default function InboxPage() {
       })
       const data = await res.json()
       if (data.success) {
-        setEmails(prev =>
-          prev.map(e =>
+        setEmails(prev => {
+          const updated = prev.map(e =>
             e.id === id ? { ...e, read: true } : e
           )
-        )
+          onEmailsLoaded(updated) // ✅ sync stats
+          return updated
+        })
       } else {
         console.error("Failed to mark read:", data.error)
       }
@@ -99,7 +106,11 @@ export default function InboxPage() {
         alert('Failed to delete email')
         return
       }
-      setEmails(prev => prev.filter(email => email.id !== id))
+      setEmails(prev => {
+        const updated = prev.filter(email => email.id !== id)
+        onEmailsLoaded(updated) // ✅ sync stats
+        return updated
+      })
     } catch (err) {
       console.error('Delete failed:', err)
       alert('Failed to delete email')
