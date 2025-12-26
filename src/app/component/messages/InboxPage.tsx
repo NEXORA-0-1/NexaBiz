@@ -10,6 +10,13 @@ async function getAuthToken() {
   return user ? await user.getIdToken() : null
 }
 
+// Utility function to decode HTML entities
+function decodeHtmlEntities(text: string): string {
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
+
 interface Email {
   id: string
   from: string
@@ -43,7 +50,7 @@ export default function InboxPage({
         id: email.id,
         from: email.from,
         subject: email.subject,
-        body: email.body || 'No preview available',
+        body: decodeHtmlEntities(email.body || 'No preview available'),
         date: email.date,
         read: email.read ?? false,
       }))
@@ -82,7 +89,7 @@ export default function InboxPage({
           const updated = prev.map(e =>
             e.id === id ? { ...e, read: true } : e
           )
-          onEmailsLoaded(updated) // ✅ sync stats
+          onEmailsLoaded(updated)
           return updated
         })
       } else {
@@ -108,7 +115,7 @@ export default function InboxPage({
       }
       setEmails(prev => {
         const updated = prev.filter(email => email.id !== id)
-        onEmailsLoaded(updated) // ✅ sync stats
+        onEmailsLoaded(updated)
         return updated
       })
     } catch (err) {
@@ -320,9 +327,9 @@ export default function InboxPage({
                       >
                         {/* Email Body */}
                         <div className="mb-5 p-4 bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-lg">
-                          <p className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">
+                          <div className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed break-words">
                             {email.body}
-                          </p>
+                          </div>
                         </div>
 
                         {/* AI Reply Section */}

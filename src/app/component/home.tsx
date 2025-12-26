@@ -515,7 +515,7 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
               <DollarSign className="w-5 h-5 opacity-80" />
             </div>
             <p className="text-3xl font-black mb-1">
-              Rs.{totalSales.toFixed(2)}
+              ${totalSales.toFixed(2)}
             </p>
             <div className="flex items-center gap-1 text-xs opacity-90">
               <ArrowUp className="w-3 h-3" />
@@ -532,7 +532,7 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
               <TrendingUp className="w-5 h-5 opacity-80" />
             </div>
             <p className="text-3xl font-black mb-1">
-              Rs.{monthlyRevenue.toFixed(2)}
+              ${monthlyRevenue.toFixed(2)}
             </p>
 
             <div className="flex items-center gap-1 text-xs opacity-90">
