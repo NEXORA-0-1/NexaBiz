@@ -66,11 +66,15 @@ export default function InboxPage({
 
   useEffect(() => {
     fetchEmails()
+
+    if (expandedId !== null) return
+
     const interval = setInterval(() => {
       fetchEmails()
     }, 30000)
+
     return () => clearInterval(interval)
-  }, [])
+  }, [expandedId])
 
   const handleToggleExpand = async (id: string) => {
     setExpandedId(prev => (prev === id ? null : id))
