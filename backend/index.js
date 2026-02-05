@@ -164,54 +164,111 @@ app.get('/api/findContacts', async (req, res) => {
 
 // -------------------- AI AUTO-REPLY ROUTE WITH AUTO ORDER --------------------
 app.post('/api/ai-reply', authenticate, async (req, res) => {
-  const { email } = req.body; // { from, subject, body }
-  if (!email || !email.body) return res.status(400).json({ error: 'Missing email data' });
+  const { email } = req.body;
+  if (!email || !email.body)
+    return res.status(400).json({ error: 'Missing email data' });
 
   const userId = req.user.uid;
 
   try {
-    // --- Fetch stock & transactions ---
-    const productsSnap = await db.collection('users').doc(userId).collection('products').get();
-    const stock_data = productsSnap.docs.map(doc => doc.data());
+    const productsSnap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('products')
+      .get();
 
-    const transactionsSnap = await db.collection('users').doc(userId).collection('transactions').get();
-    const transaction_data = transactionsSnap.docs.map(doc => doc.data());
-
-    // --- Call AI to detect order or reply ---
-    const aiResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
-      email,
-      stock_data,
-      transaction_data
+    const stock_data = productsSnap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        product_name: d.product_name,
+        stock: Number(d.stock_amount || 0)
+      };
     });
 
-    // --- If AI detected order, process it ---
+    const transactionsSnap = await db
+      .collection('users')
+      .doc(userId)
+      .collection('transactions')
+      .get();
+
+    const transaction_data = transactionsSnap.docs.map(doc => doc.data());
+
+    const aiResponse = await axios.post(
+      'http://127.0.0.1:5005/auto_reply',
+      { email, stock_data, transaction_data }
+    );
+
+    console.log("AI detected order:", aiResponse.data.orderDetected);
+    console.log("Order items:", aiResponse.data.items);
+
     if (aiResponse.data.orderDetected) {
-      const orderResponse = await axios.post(`${req.protocol}://${req.get('host')}/api/processOrder`, {
-        customer_name: aiResponse.data.customer_name,
-        items: aiResponse.data.items
-      }, { headers: { Authorization: req.headers.authorization } });
 
-      // --- Send processed order back to AI for confirmation message ---
-      const confirmationResponse = await axios.post('http://127.0.0.1:5005/auto_reply', {
-        email: {
-          from: email.from,
-          subject: "Order Confirmation",
-          body: "Here are your order details"
-        },
-        stock_data,
-        transaction_data,
-        processedOrder: orderResponse.data
-      });
+      // ---------------- NORMALIZE EMAIL ----------------
+      let senderEmail = email.from || "";
+      const match = senderEmail.match(/<(.+?)>/);
+      if (match) senderEmail = match[1];
 
-      return res.json({ reply: confirmationResponse.data.reply });
+      senderEmail = senderEmail.trim().toLowerCase();
+
+      console.log("Normalized sender email:", senderEmail);
+
+      // ---------------- VERIFY CUSTOMER BY EMAIL ----------------
+      const customerSnap = await db
+        .collection('users')
+        .doc(userId)
+        .collection('customers')
+        .where('email', '==', senderEmail)
+        .limit(1)
+        .get();
+
+      const isVerifiedCustomer = !customerSnap.empty;
+
+      console.log("Customer verified:", isVerifiedCustomer);
+
+      if (isVerifiedCustomer) {
+
+        const orderResponse = await axios.post(
+          `${req.protocol}://${req.get('host')}/api/processOrder`,
+          {
+            customer_name: senderEmail,
+            items: aiResponse.data.items
+          },
+          { headers: { Authorization: req.headers.authorization } }
+        );
+
+        console.log("Order processed:", orderResponse.data);
+
+        const confirmationResponse = await axios.post(
+          'http://127.0.0.1:5005/auto_reply',
+          {
+            email: {
+              from: senderEmail,
+              subject: "Order Confirmation",
+              body: "Order successfully placed"
+            },
+            stock_data,
+            transaction_data,
+            processedOrder: orderResponse.data
+          }
+        );
+
+        return res.json({ reply: confirmationResponse.data.reply });
+
+      } else {
+        return res.json({
+          reply: "Customer email not verified. Please register this customer first."
+        });
+      }
     }
 
     return res.json({ reply: aiResponse.data.reply });
+
   } catch (err) {
-    console.error('AI Reply Error:', err.message);
+    console.error("AI Reply Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // -------------------- PROCESS ORDER ROUTE --------------------
 app.post('/api/processOrder', authenticate, async (req, res) => {

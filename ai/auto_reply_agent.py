@@ -60,8 +60,8 @@ def parse_order_from_message(message, stock_data):
         matches = []
 
         high_patterns = [
-            rf'(\d+)\s*(?:qty|pcs|units|x|of)\s*{esc}',
-            rf'{esc}\s*(?:qty|pcs|units)?\s*(\d+)\b'
+            rf'(\d+)\s*(?:qty|pcs|units|x)?\s*(?:of\s+)?(?:the\s+)?{esc}',
+            rf'{esc}(?:\s+product)?\s*(?:qty|pcs|units|x)?\s*(\d+)\b'
         ]
 
         for pat in high_patterns:
