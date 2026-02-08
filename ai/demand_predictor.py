@@ -5,6 +5,7 @@ from prophet import Prophet
 import google.generativeai as genai
 from pytrends.request import TrendReq
 import logging
+import re
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -80,12 +81,17 @@ def fetch_ai_insight(product, current_stock, forecasted_demand, trend_score, tre
         f"1. Stock Management: what to order or adjust\n"
         f"2. Pricing: any changes or promotions\n"
         f"3. Marketing: simple, effective steps to increase sales\n"
-        f"Keep it short, easy to read, and suitable for a business user. Use bullet points if helpful."
+        f"IMPORTANT: Do NOT use markdown (like **, ##, or -). Use plain text only. Use simple dashes for lists if needed."
+        f"Keep it short, professional, and easy to read."
     )
     try:
         model_gemini = genai.GenerativeModel("gemini-2.5-flash-lite")
         response = model_gemini.generate_content(prompt)
-        return response.text
+        text = response.text
+        # Clean markdown symbols
+        text = re.sub(r'\*\*|##|__', '', text)  # Remove bold/headers
+        text = re.sub(r'^\s*[\-\*]\s+', '• ', text, flags=re.MULTILINE) # Standardize bullets
+        return text.strip()
     except Exception as e:
         logging.error(f"Gemini AI error: {e}")
         return "Unable to generate AI insight."
