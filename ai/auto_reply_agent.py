@@ -34,7 +34,6 @@ def words_to_num(text):
     total += current
     return total if seen else None
 
-
 def parse_order_from_message(message, stock_data):
     """
     Returns:
@@ -86,80 +85,61 @@ def auto_reply():
 
     email = data.get("email", {})
     stock_data = data.get("stock_data", [])
-    transaction_data = data.get("transaction_data", [])
     processed_order = data.get("processedOrder")
 
     customer_message = email.get("body", "")
     subject = email.get("subject", "")
     sender = email.get("from", "")
 
-    order_items, mentioned_products = parse_order_from_message(
-        customer_message, stock_data
-    )
-
+    order_items, mentioned_products = parse_order_from_message(customer_message, stock_data)
     intent = "order" if order_items else "inquiry"
 
-    stock_lookup = {
-        p["product_name"]: p.get("stock", "unknown")
-        for p in stock_data
-    }
+    # stock lookup for all products
+    stock_lookup = {p["product_name"]: p.get("stock", "unknown") for p in stock_data}
 
     prompt = f"""
-You are Nexabiz AI, a friendly and professional customer support assistant.
-
-Customer name: {sender}
+You are Nexabiz AI, a professional customer support assistant.
+Customer email: {sender}
 Subject: {subject}
-
 Customer message:
 {customer_message}
-
-Business data:
-Current stock levels: {stock_data}
-
-Customer intent: {intent}
 """
 
-    if intent == "order":
+    if processed_order:
+        # If order has been processed, focus on items and stock
+        prompt += f"""
+The customer order has been successfully processed:
+{json.dumps(processed_order)}
+
+For each item in the processed order, mention:
+- product name
+- ordered quantity
+- stock remaining
+Do NOT mention products that were not ordered.
+Write a concise, polite HTML email starting with <p> and ending with:
+<br><br>Best regards,<br>The Nexabiz Team
+"""
+    elif intent == "order":
+        # Customer wants to place order but not processed yet
         prompt += f"""
 The customer wants to place an order for:
 {json.dumps(order_items)}
 
-Acknowledge the order clearly and politely.
+Acknowledge the order politely.
+Mention stock availability for each requested item.
 Do NOT assume payment.
-Mention stock availability per item.
+Write a concise HTML email starting with <p> and ending with:
+<br><br>Best regards,<br>The Nexabiz Team
 """
     else:
-        inquiry_stock = {
-            p: stock_lookup.get(p, "unknown")
-            for p in mentioned_products
-        }
-
+        # General inquiry
+        inquiry_stock = {p: stock_lookup.get(p, "unknown") for p in mentioned_products}
         prompt += f"""
-The customer is asking about product availability.
-
-Mention the current stock clearly and helpfully:
+The customer is asking about product availability:
 {json.dumps(inquiry_stock)}
-
+Write a polite HTML email, only mentioning requested products.
 Do NOT treat this as an order.
-Encourage them to confirm quantities if they wish to proceed.
-"""
-
-    if processed_order:
-        prompt += f"""
-Processed order details:
-{json.dumps(processed_order)}
-
-Confirm what is available and what is out of stock.
-"""
-
-    prompt += """
-Write a polite, natural HTML email.
-Rules:
-- Use <p> tags only
-- No markdown
-- No code blocks
-- Start with <p>
-End with:
+Start with <p> and end with:
 <br><br>Best regards,<br>The Nexabiz Team
 """
 
