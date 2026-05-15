@@ -279,13 +279,15 @@ const Home: React.FC<{ userData: UserData }> = ({ userData }) => {
     try {
       const idToken = await auth.currentUser?.getIdToken()
       const response = await fetch('http://localhost:3001/api/forecast', {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
         body: JSON.stringify({ query })
-      })
+      });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json()
 
       const botMessage = data?.readable_text || 'Sorry, I could not generate a response.'

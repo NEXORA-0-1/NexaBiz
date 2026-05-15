@@ -80,6 +80,8 @@ app.post('/api/forecast', authenticate, [
       transaction_data
     });
 
+    console.log("✅ AI agent response received");
+
     res.json(agentResponse.data);
   } catch (error) {
     console.error('❌ AI agent error:', error.message);
